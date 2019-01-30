@@ -14,9 +14,14 @@ import {OutputGTFSZipCommand} from "./OutputGTFSZipCommand";
 import {DownloadCommand} from "./DownloadCommand";
 import {DownloadAndProcessCommand} from "./DownloadAndProcessCommand";
 import {GTFSImportCommand} from "./GTFSImportCommand";
-import {downloadUrl} from "../../config/nfm64";
+import {nfm64DownloadUrl} from "../../config/nfm64";
 import {DownloadFileCommand} from "./DownloadFileCommand";
 import {PromiseSFTP} from "../sftp/PromiseSFTP";
+import {ImportIdmsFixedLinksCommand} from "./ImportIdmsFixedLinksCommand";
+import * as AWS from 'aws-sdk';
+import * as proxy from "proxy-agent";
+import {DownloadFileFromS3Command} from "./DownloadFileFromS3Command";
+import {idmsFixedLinksDownloadUrl} from "../../config/idms";
 
 export class Container {
 
@@ -28,6 +33,7 @@ export class Container {
       case "--routeing": return this.getRouteingImportCommand();
       case "--timetable": return this.getTimetableImportCommand();
       case "--nfm64": return this.getNFM64ImportCommand();
+      case "--idms-fixed-links": return this.getIdmsFixedLinksImportCommand();
       case "--gtfs": return this.getOutputGTFSCommand();
       case "--gtfs-import": return this.getImportGTFSCommand();
       case "--gtfs-zip": return this.getOutputGTFSZipCommand();
@@ -35,10 +41,12 @@ export class Container {
       case "--download-timetable": return this.getDownloadCommand("/timetable/");
       case "--download-routeing": return this.getDownloadCommand("/routing_guide/");
       case "--download-nfm64": return this.getDownloadNFM64Command();
+      case "--download-idms-fixed-links": return this.getDownloadIdmsFixedLinksCommand();
       case "--get-fares": return this.getDownloadAndProcessCommand("/fares/", this.getFaresImportCommand());
       case "--get-timetable": return this.getDownloadAndProcessCommand("/timetable/", this.getTimetableImportCommand());
       case "--get-routeing": return this.getDownloadAndProcessCommand("/routing_guide/", this.getRouteingImportCommand());
       case "--get-nfm64": return this.getDownloadAndProcessNFM64Command();
+      case "--get-idms-fixed-links": return this.getDownloadAndProcessIdmsFixedLinksCommand();
       default: return this.getShowHelpCommand();
     }
   }
@@ -63,6 +71,10 @@ export class Container {
     return new ImportFeedCommand(await this.getDatabaseConnection(), config.nfm64, "/tmp/dtd/nfm64/");
   }
 
+  @memoize
+  public async getIdmsFixedLinksImportCommand(): Promise<ImportIdmsFixedLinksCommand> {
+    return new ImportIdmsFixedLinksCommand(await this.getDatabaseConnection(), config.idms, "/tmp/idms/fixed-links/");
+  }
 
   @memoize
   public async getCleanFaresCommand(): Promise<CLICommand> {
@@ -108,7 +120,45 @@ export class Container {
 
   @memoize
   private async getDownloadNFM64Command(): Promise<DownloadFileCommand> {
-    return Promise.resolve(new DownloadFileCommand(downloadUrl));
+    return Promise.resolve(new DownloadFileCommand(nfm64DownloadUrl, 'nfm64.zip'));
+  }
+
+  @memoize
+  private async getDownloadIdmsFixedLinksCommand(): Promise<DownloadFileFromS3Command | DownloadFileCommand> {
+    const command = process.env.S3_KEY
+        // Download via S3 API
+        ? new DownloadFileFromS3Command(await this.getS3(), 'idms', 'FixedLinks_v1.0.xml')
+        // Download via HTTPS
+        : new DownloadFileCommand(idmsFixedLinksDownloadUrl, 'FixedLinks_v1.0.xml');
+
+    return Promise.resolve(command);
+  }
+  
+  private async getS3(): Promise<AWS.S3> {
+    const key = process.env.S3_KEY;
+    const secret = process.env.S3_SECRET;
+    const region = process.env.S3_REGION || 'eu-west-1';
+    const proxyUrl = process.env.S3_PROXY;
+    const debug = process.env.DEBUG;
+    
+    if (!key || !secret) {
+      throw new Error('S3_KEY and S3_SECRET environment variables need to be set in order to download IDMS data');
+    }
+    
+    const config: AWS.S3.Types.ClientConfiguration = {
+      region: region,
+      credentials: new AWS.Credentials(key, secret),
+    };
+    
+    if (debug) {
+      config.logger = console;
+    }
+    
+    if (proxyUrl) {
+      config.httpOptions = { agent: proxy(proxyUrl)};
+    }
+
+    return new AWS.S3(config);
   }
 
   @memoize
@@ -121,6 +171,14 @@ export class Container {
     return new DownloadAndProcessCommand(
       await this.getDownloadNFM64Command(),
       await this.getNFM64ImportCommand()
+    );
+  }
+
+  @memoize
+  private async getDownloadAndProcessIdmsFixedLinksCommand(): Promise<DownloadAndProcessCommand> {
+    return new DownloadAndProcessCommand(
+      await this.getDownloadIdmsFixedLinksCommand(),
+      await this.getIdmsFixedLinksImportCommand()
     );
   }
 

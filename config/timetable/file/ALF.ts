@@ -1,14 +1,6 @@
-
-import {TextField, VariableLengthText} from "../../../src/feed/field/TextField";
-import {IntField} from "../../../src/feed/field/IntField";
-import {TimeField} from "../../../src/feed/field/TimeField";
-import {DateField} from "../../../src/feed/field/DateField";
+import {BooleanField, DateField, IntField, TextField, TimeField, VariableLengthText} from "../../../src/feed/field";
 import {SingleRecordFile} from "../../../src/feed/file/SingleRecordFile";
-import {BooleanField} from "../../../src/feed/field/BooleanField";
-
-import memoize = require("memoized-class-decorator");
-import {Record, FieldMap, ParsedRecord, RecordAction} from "../../../src/feed/record/Record";
-import {FieldValue} from "../../../src/feed/field/Field";
+import {FieldMap, ParsedRecord, Record, RecordAction} from "../../../src/feed/record/Record";
 import {isNullOrUndefined} from "util";
 
 /**
@@ -32,7 +24,7 @@ class ALFDate extends DateField {
 /**
  * The ALF file has a bizarre CSV like format with optional fields so some specific processing is required.
  */
-class ALFRecord implements Record {
+export class ALFRecord implements Record {
 
   private readonly fieldMap = {
     "mode": ["M"],
