@@ -83,24 +83,26 @@ export class Association implements OverlayRecord {
     let start: StopTime[];
     let assocStop: StopTime;
     let end: StopTime[];
+    const baseStopTime = base.stopAt(this.assocLocation);
+    const assocStopTime = base.stopAt(this.assocLocation);
+
+    // this should never happen, unless data feed is corrupted. It will prevent us from update failure (see: JP-404).
+    if (baseStopTime === undefined || assocStopTime === undefined) {
+      return assoc;
+    }
 
     if (this.assocType === AssociationType.Split) {
       tuid = base.tuid + "_" + assoc.tuid;
 
       start = base.before(this.assocLocation);
-      assocStop = this.mergeAssociationStop(base.stopAt(this.assocLocation), assoc.stopAt(this.assocLocation));
+      assocStop = this.mergeAssociationStop(baseStopTime, assocStopTime);
       end = assoc.after(this.assocLocation);
     }
     else {
-      // this should never happen, unless data feed is corrupted. It will prevent us from update failure (see: JP-404).
-      if (assoc.stopAt(this.assocLocation) === undefined || base.stopAt(this.assocLocation) === undefined) {
-        return assoc;
-      }
-      
       tuid = assoc.tuid + "_" + base.tuid;
 
       start = assoc.before(this.assocLocation);
-      assocStop = this.mergeAssociationStop(assoc.stopAt(this.assocLocation), base.stopAt(this.assocLocation));
+      assocStop = this.mergeAssociationStop(assocStopTime, baseStopTime);
       end = base.after(this.assocLocation)
     }
 
