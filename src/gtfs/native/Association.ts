@@ -1,11 +1,12 @@
-import { Schedule } from "./Schedule";
-import { NO_DAYS, OverlapType, ScheduleCalendar } from "./ScheduleCalendar";
-import { CRS, Stop } from "../file/Stop";
-import { Duration, Moment } from "moment";
-import { IdGenerator, OverlayRecord, STP, TUID } from "./OverlayRecord";
-import { StopTime } from "../file/StopTime";
+
+import {Schedule} from "./Schedule";
+import {NO_DAYS, OverlapType, ScheduleCalendar} from "./ScheduleCalendar";
+import {CRS, Stop} from "../file/Stop";
+import {Duration, Moment} from "moment";
+import {IdGenerator, OverlayRecord, STP, TUID} from "./OverlayRecord";
+import {StopTime} from "../file/StopTime";
 import moment = require("moment");
-import { formatDuration } from "./Duration";
+import {formatDuration} from "./Duration";
 
 export class Association implements OverlayRecord {
 
@@ -18,8 +19,7 @@ export class Association implements OverlayRecord {
     public readonly assocType: AssociationType,
     public readonly calendar: ScheduleCalendar,
     public readonly stp: STP
-  ) {
-  }
+  ) { }
 
   public get tuid(): TUID {
     return this.baseTUID + "_" + this.assocTUID + "_";
@@ -96,7 +96,7 @@ export class Association implements OverlayRecord {
       if (assoc.stopAt(this.assocLocation) === undefined || base.stopAt(this.assocLocation) === undefined) {
         return assoc;
       }
-
+      
       tuid = assoc.tuid + "_" + base.tuid;
 
       start = assoc.before(this.assocLocation);
@@ -136,28 +136,24 @@ export class Association implements OverlayRecord {
    * Take the arrival time of the first stop and the departure time of the second stop and put them into a new stop
    */
   public mergeAssociationStop(arrivalStop: StopTime, departureStop: StopTime): StopTime {
-    try {
-      let arrivalTime = moment.duration(arrivalStop.arrival_time);
-      let departureTime = moment.duration(departureStop.departure_time);
+    let arrivalTime = moment.duration(arrivalStop.arrival_time);
+    let departureTime = moment.duration(departureStop.departure_time);
 
-      if (arrivalTime.asSeconds() > departureTime.asSeconds()) {
-        if (this.dateIndicator === DateIndicator.Next) {
-          departureTime.add(1, "days");
-        }
-        else {
-          arrivalTime = moment.duration(departureStop.arrival_time);
-        }
+    if (arrivalTime.asSeconds() > departureTime.asSeconds()) {
+      if (this.dateIndicator === DateIndicator.Next) {
+        departureTime.add(1, "days");
       }
-
-      return Object.assign({}, arrivalStop, {
-        arrival_time: formatDuration(arrivalTime.asSeconds()),
-        departure_time: formatDuration(departureTime.asSeconds()),
-        pickup_type: departureStop.pickup_type,
-        drop_off_type: arrivalStop.drop_off_type
-      });
-    } catch (e) {
-      throw e;
+      else {
+        arrivalTime = moment.duration(departureStop.arrival_time);
+      }
     }
+
+    return Object.assign({}, arrivalStop, {
+      arrival_time: formatDuration(arrivalTime.asSeconds()),
+      departure_time: formatDuration(departureTime.asSeconds()),
+      pickup_type: departureStop.pickup_type,
+      drop_off_type: arrivalStop.drop_off_type
+    });
   }
 
 }
