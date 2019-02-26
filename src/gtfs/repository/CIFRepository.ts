@@ -166,8 +166,6 @@ export class CIFRepository {
         start_time, end_time, start_date, end_date,
         monday, tuesday, wednesday, thursday, friday, saturday, sunday
       FROM additional_fixed_link
-      WHERE origin IN (SELECT crs_code FROM physical_station)
-        AND destination IN (SELECT crs_code FROM physical_station)
       
       UNION
       
@@ -176,8 +174,6 @@ export class CIFRepository {
         start_time, end_time, start_date, end_date,
         monday, tuesday, wednesday, thursday, friday, saturday, sunday
       FROM idms_fixed_link
-      WHERE origin IN (SELECT crs_code FROM physical_station)
-        AND destination IN (SELECT crs_code FROM physical_station)
       
       UNION
       

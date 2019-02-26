@@ -1,12 +1,10 @@
-
 import {Schedule} from "./Schedule";
-import {NO_DAYS, OverlapType, ScheduleCalendar} from "./ScheduleCalendar";
-import {CRS, Stop} from "../file/Stop";
-import {Duration, Moment} from "moment";
+import {ScheduleCalendar} from "./ScheduleCalendar";
+import {CRS} from "../file/Stop";
 import {IdGenerator, OverlayRecord, STP, TUID} from "./OverlayRecord";
 import {StopTime} from "../file/StopTime";
-import moment = require("moment");
 import {formatDuration} from "./Duration";
+import moment = require("moment");
 
 export class Association implements OverlayRecord {
 
@@ -19,7 +17,8 @@ export class Association implements OverlayRecord {
     public readonly assocType: AssociationType,
     public readonly calendar: ScheduleCalendar,
     public readonly stp: STP
-  ) { }
+  ) {
+  }
 
   public get tuid(): TUID {
     return this.baseTUID + "_" + this.assocTUID + "_";
@@ -84,7 +83,7 @@ export class Association implements OverlayRecord {
     let assocStop: StopTime;
     let end: StopTime[];
     const baseStopTime = base.stopAt(this.assocLocation);
-    const assocStopTime = base.stopAt(this.assocLocation);
+    const assocStopTime = assoc.stopAt(this.assocLocation);
 
     // this should never happen, unless data feed is corrupted. It will prevent us from update failure (see: JP-404).
     if (baseStopTime === undefined || assocStopTime === undefined) {
@@ -97,8 +96,7 @@ export class Association implements OverlayRecord {
       start = base.before(this.assocLocation);
       assocStop = this.mergeAssociationStop(baseStopTime, assocStopTime);
       end = assoc.after(this.assocLocation);
-    }
-    else {
+    } else {
       tuid = assoc.tuid + "_" + base.tuid;
 
       start = assoc.before(this.assocLocation);
@@ -144,8 +142,7 @@ export class Association implements OverlayRecord {
     if (arrivalTime.asSeconds() > departureTime.asSeconds()) {
       if (this.dateIndicator === DateIndicator.Next) {
         departureTime.add(1, "days");
-      }
-      else {
+      } else {
         arrivalTime = moment.duration(departureStop.arrival_time);
       }
     }
