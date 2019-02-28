@@ -124,7 +124,7 @@ export class ScheduleBuilder {
       drop_off_type: coordinatedDropOff || dropOff,
       shape_dist_traveled: null,
       timepoint: 1,
-      activity: row.activity
+      activity: row.activity.trimRight()
     };
   }
 
