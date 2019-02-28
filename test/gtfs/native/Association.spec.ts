@@ -295,6 +295,7 @@ function stop(stopSequence: number, location: CRS, time: string, tripId: number 
     drop_off_type: 0,
     shape_dist_traveled: null,
     timepoint: 0,
+    activity: ''
   };
 }
 
