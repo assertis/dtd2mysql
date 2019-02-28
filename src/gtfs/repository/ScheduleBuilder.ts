@@ -89,7 +89,8 @@ export class ScheduleBuilder {
       row.atoc_code,
       row.stp_indicator,
       row.train_class !== "S",
-      row.reservations !== null
+      row.reservations !== null,
+      row.activity
     );
   }
 
@@ -122,7 +123,8 @@ export class ScheduleBuilder {
       pickup_type: coordinatedDropOff || pickup,
       drop_off_type: coordinatedDropOff || dropOff,
       shape_dist_traveled: null,
-      timepoint: 1
+      timepoint: 1,
+      activity: row.activity
     };
   }
 

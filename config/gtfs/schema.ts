@@ -98,6 +98,7 @@ CREATE TABLE stop_times (
   drop_off_type tinyint(1) unsigned DEFAULT NULL,
   shape_dist_traveled varchar(50) DEFAULT NULL,
   timepoint tinyint(1) unsigned DEFAULT NULL,
+  activity varchar(13) DEFAULT NULL,
   PRIMARY KEY (trip_id, stop_sequence),
   KEY arrival_time (arrival_time),
   KEY departure_time (departure_time),

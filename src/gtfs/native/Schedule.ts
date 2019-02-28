@@ -23,7 +23,8 @@ export class Schedule implements OverlayRecord {
     public readonly operator: AgencyID | null,
     public readonly stp: STP,
     public readonly firstClassAvailable: boolean,
-    public readonly reservationPossible: boolean
+    public readonly reservationPossible: boolean,
+    public readonly activity: string
   ) {}
 
   public get origin(): CRS {
@@ -52,7 +53,8 @@ export class Schedule implements OverlayRecord {
       this.operator,
       this.stp,
       this.firstClassAvailable,
-      this.reservationPossible
+      this.reservationPossible,
+      this.activity
     );
   }
 
