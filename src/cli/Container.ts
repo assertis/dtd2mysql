@@ -21,7 +21,7 @@ import {ImportIdmsFixedLinksCommand} from "./ImportIdmsFixedLinksCommand";
 import * as AWS from 'aws-sdk';
 import * as proxy from "proxy-agent";
 import {DownloadFileFromS3Command} from "./DownloadFileFromS3Command";
-import {idmsFixedLinksDownloadUrl} from "../../config/idms";
+import {idmsFixedLinksBucket, idmsFixedLinksPath, idmsFixedLinkUrl} from "../../config/idms";
 
 export class Container {
 
@@ -127,9 +127,9 @@ export class Container {
   private async getDownloadIdmsFixedLinksCommand(): Promise<DownloadFileFromS3Command | DownloadFileCommand> {
     const command = process.env.S3_KEY
         // Download via S3 API
-        ? new DownloadFileFromS3Command(await this.getS3(), 'idms', 'FixedLinks_v1.0.xml')
+        ? new DownloadFileFromS3Command(await this.getS3(), idmsFixedLinksBucket, idmsFixedLinksPath, 'FixedLinks_v1.0.xml')
         // Download via HTTPS
-        : new DownloadFileCommand(idmsFixedLinksDownloadUrl, 'FixedLinks_v1.0.xml');
+        : new DownloadFileCommand(idmsFixedLinkUrl, 'FixedLinks_v1.0.xml');
 
     return Promise.resolve(command);
   }
