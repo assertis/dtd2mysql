@@ -12,6 +12,7 @@ import {GTFSOutput} from "../gtfs/output/GTFSOutput";
 import * as fs from "fs";
 import {addLateNightServices} from "../gtfs/command/AddLateNightServices";
 import streamToPromise = require("stream-to-promise");
+import {Route} from "../gtfs/file/Route";
 
 export class OutputGTFSCommand implements CLICommand {
   private baseDir: string;
@@ -19,7 +20,8 @@ export class OutputGTFSCommand implements CLICommand {
   public constructor(
     private readonly repository: CIFRepository,
     private readonly output: GTFSOutput
-  ) {}
+  ) {
+  }
 
   /**
    * Turn the timetable feed into GTFS files
@@ -84,8 +86,12 @@ export class OutputGTFSCommand implements CLICommand {
 
     for (const schedule of schedules) {
       const route = schedule.toRoute();
-      routes[route.route_short_name] = routes[route.route_short_name] || route;
-      const routeId = routes[route.route_short_name].route_id;
+      // if (schedule.tuid === "M65832") {
+      //     console.log('---FF--',route,'---FF---');
+      // }
+      const routeKey = this.getRouteKey(route);
+      routes[routeKey] = routes[routeKey] || route;
+      const routeId = routes[routeKey].route_id;
       const serviceId = serviceIds[schedule.calendar.id];
 
       trips.write(schedule.toTrip(serviceId, routeId));
@@ -93,8 +99,11 @@ export class OutputGTFSCommand implements CLICommand {
     }
 
     for (const route of Object.values(routes)) {
+      if (route.hasOwnProperty('route_short_name') && route['route_short_name'] === 'SR:ABD->DEE') {
+        console.log('----',route,'-----');
+      }
       routeFile.write(route);
-    }
+              }
 
     trips.end();
     stopTimes.end();
@@ -114,7 +123,25 @@ export class OutputGTFSCommand implements CLICommand {
     const mergedSchedules = <Schedule[]>mergeSchedules(associatedSchedules);
     const schedules = addLateNightServices(mergedSchedules, scheduleResults.idGenerator);
 
+    for (const schedulesKey in schedules) {
+      const schedule = schedules[schedulesKey];
+      // if (schedule.toRoute().route_short_name === "SR:ABD->DEE") {
+      //     console.log('---AS--',schedule.toRoute(),'---AS---');
+      // }
+    }
     return schedules;
+  }
+
+  /**
+   * We should group routes not only by short_name but also by route_type which can be difference.
+   * For example SR:ABD->DEE with train is not the same route as SR:ABD->DEE with bus replacement.
+   * @param route
+   */
+  private getRouteKey(route: Route): string {
+    return [
+      route.route_short_name,
+      route.route_type
+    ].join('-');
   }
 
 }

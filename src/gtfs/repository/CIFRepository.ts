@@ -105,7 +105,7 @@ export class CIFRepository {
           monday, tuesday, wednesday, thursday, friday, saturday, sunday,
           stp_indicator, location AS crs_code, train_category,
           public_arrival_time, public_departure_time, scheduled_arrival_time, scheduled_departure_time,
-          platform, NULL AS atoc_code, z_stop_time.id AS stop_id, activity, NULL AS reservations, "S" AS train_class 
+          platform, NULL AS atoc_code, z_stop_time.id AS stop_id, activity, NULL AS reservations, "S" AS train_class
         FROM z_schedule
         JOIN z_stop_time ON z_schedule.id = z_stop_time.z_schedule
         WHERE runs_from < CURDATE() + INTERVAL 3 MONTH
@@ -113,7 +113,11 @@ export class CIFRepository {
         ORDER BY stop_id
       `))
     ]);
-
+    scheduleBuilder.results.schedules.forEach(schedule => {
+        if(schedule.tuid === 'M65832') {
+            // console.log('Z BAZY DANYCH', schedule.id, schedule.mode);
+        }
+    });
     return scheduleBuilder.results;
   }
 
