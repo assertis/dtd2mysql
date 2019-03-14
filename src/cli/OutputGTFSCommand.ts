@@ -12,7 +12,7 @@ import {GTFSOutput} from "../gtfs/output/GTFSOutput";
 import * as fs from "fs";
 import {addLateNightServices} from "../gtfs/command/AddLateNightServices";
 import streamToPromise = require("stream-to-promise");
-import {Route} from "../gtfs/file/Route";
+import {Route, RouteID} from "../gtfs/file/Route";
 
 export class OutputGTFSCommand implements CLICommand {
   private baseDir: string;
@@ -84,10 +84,10 @@ export class OutputGTFSCommand implements CLICommand {
     const routes = {};
 
     for (const schedule of schedules) {
-      const route = schedule.toRoute();
-      const routeKey = this.getRouteKey(route);
-      routes[routeKey] = routes[routeKey] || route;
-      const routeId = routes[routeKey].route_id;
+      // const route = schedule.toRoute();
+      // const routeKey = this.getRouteKey(route);
+      // routes[routeKey] = routes[routeKey] || route;
+      const routeId = this.getRoutesFromSchedule(schedule, routes);
       const serviceId = serviceIds[schedule.calendar.id];
 
       trips.write(schedule.toTrip(serviceId, routeId));
@@ -117,6 +117,19 @@ export class OutputGTFSCommand implements CLICommand {
     const schedules = addLateNightServices(mergedSchedules, scheduleResults.idGenerator);
 
     return schedules;
+  }
+
+  /**
+   * Wrap around collecting routes to make this thing testable.
+   * We use javascript feature here with passing object reference as argument
+   * @param schedule
+   * @param routesCollection
+   */
+  public getRoutesFromSchedule(schedule: Schedule, routesCollection: {}): RouteID {
+    const route = schedule.toRoute();
+    const routeKey = this.getRouteKey(route);
+    routesCollection[routeKey] = routesCollection[routeKey] || route
+    return routesCollection[routeKey].route_id;
   }
 
   /**
