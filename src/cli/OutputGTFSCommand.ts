@@ -20,8 +20,7 @@ export class OutputGTFSCommand implements CLICommand {
   public constructor(
     private readonly repository: CIFRepository,
     private readonly output: GTFSOutput
-  ) {
-  }
+  ) {}
 
   /**
    * Turn the timetable feed into GTFS files
