@@ -66,9 +66,6 @@ export class ScheduleBuilder {
 
   private createSchedule(row: ScheduleStopTimeRow, stops: StopTime[]): Schedule {
     this.maxId = Math.max(this.maxId, row.id);
-    if(row.train_uid === 'M65832') {
-        // console.log(row.id, row.train_uid, row.train_category, routeTypeIndex[row.train_category]);
-    }
     return new Schedule(
       row.id,
       stops,

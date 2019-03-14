@@ -113,11 +113,7 @@ export class CIFRepository {
         ORDER BY stop_id
       `))
     ]);
-    scheduleBuilder.results.schedules.forEach(schedule => {
-        if(schedule.tuid === 'M65832') {
-            // console.log('Z BAZY DANYCH', schedule.id, schedule.mode);
-        }
-    });
+
     return scheduleBuilder.results;
   }
 

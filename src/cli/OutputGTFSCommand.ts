@@ -99,11 +99,8 @@ export class OutputGTFSCommand implements CLICommand {
     }
 
     for (const route of Object.values(routes)) {
-      if (route.hasOwnProperty('route_short_name') && route['route_short_name'] === 'SR:ABD->DEE') {
-        console.log('----',route,'-----');
-      }
       routeFile.write(route);
-              }
+    }
 
     trips.end();
     stopTimes.end();
@@ -123,12 +120,6 @@ export class OutputGTFSCommand implements CLICommand {
     const mergedSchedules = <Schedule[]>mergeSchedules(associatedSchedules);
     const schedules = addLateNightServices(mergedSchedules, scheduleResults.idGenerator);
 
-    for (const schedulesKey in schedules) {
-      const schedule = schedules[schedulesKey];
-      // if (schedule.toRoute().route_short_name === "SR:ABD->DEE") {
-      //     console.log('---AS--',schedule.toRoute(),'---AS---');
-      // }
-    }
     return schedules;
   }
 
