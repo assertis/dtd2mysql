@@ -66,6 +66,7 @@ export class ScheduleBuilder {
 
   private createSchedule(row: ScheduleStopTimeRow, stops: StopTime[]): Schedule {
     this.maxId = Math.max(this.maxId, row.id);
+
     return new Schedule(
       row.id,
       stops,
