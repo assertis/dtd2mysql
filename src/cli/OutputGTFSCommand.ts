@@ -12,6 +12,7 @@ import {GTFSOutput} from "../gtfs/output/GTFSOutput";
 import * as fs from "fs";
 import {addLateNightServices} from "../gtfs/command/AddLateNightServices";
 import streamToPromise = require("stream-to-promise");
+import {Route, RouteID} from "../gtfs/file/Route";
 
 export class OutputGTFSCommand implements CLICommand {
   private baseDir: string;
@@ -83,9 +84,7 @@ export class OutputGTFSCommand implements CLICommand {
     const routes = {};
 
     for (const schedule of schedules) {
-      const route = schedule.toRoute();
-      routes[route.route_short_name] = routes[route.route_short_name] || route;
-      const routeId = routes[route.route_short_name].route_id;
+      const routeId = this.getRoutesFromSchedule(schedule, routes);
       const serviceId = serviceIds[schedule.calendar.id];
 
       trips.write(schedule.toTrip(serviceId, routeId));
@@ -115,6 +114,31 @@ export class OutputGTFSCommand implements CLICommand {
     const schedules = addLateNightServices(mergedSchedules, scheduleResults.idGenerator);
 
     return schedules;
+  }
+
+  /**
+   * Wrap around collecting routes to make this thing testable.
+   * We use javascript feature here with passing object reference as argument
+   * @param schedule
+   * @param routesCollection
+   */
+  public getRoutesFromSchedule(schedule: Schedule, routesCollection: {}): RouteID {
+    const route = schedule.toRoute();
+    const routeKey = this.getRouteKey(route);
+    routesCollection[routeKey] = routesCollection[routeKey] || route
+    return routesCollection[routeKey].route_id;
+  }
+
+  /**
+   * We should group routes not only by short_name but also by route_type which can be difference.
+   * For example SR:ABD->DEE with train is not the same route as SR:ABD->DEE with bus replacement.
+   * @param route
+   */
+  private getRouteKey(route: Route): string {
+    return [
+      route.route_short_name,
+      route.route_type
+    ].join('-');
   }
 
 }

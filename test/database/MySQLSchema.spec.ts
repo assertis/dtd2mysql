@@ -47,7 +47,7 @@ describe("MySQLSchema", () => {
 
 });
 
-class MockDatabaseConnection implements DatabaseConnection {
+export class MockDatabaseConnection implements DatabaseConnection {
   public readonly queries: string[] = [];
 
   query(sql: string, parameters?: any[]): Promise<any> {
