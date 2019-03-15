@@ -50,7 +50,7 @@ export interface IdmsGroupRecord {
     startdate: string, // '2018-05-21'
     enddate: string, // '2999-12-31'
   },
-  crs: string[], // [ 'CET', 'COL' ]
+  crs: string | string[], // [ 'CET', 'COL' ]
 }
 
 const FareGroupPermittedStations_v10 = new XmlFile(idmsGroupFilename, new GroupRecord());
