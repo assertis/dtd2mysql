@@ -31,13 +31,12 @@ class GroupRecord implements Record {
 
     const crsList = Array.isArray(record.crs) ? record.crs : [record.crs];
 
-    return crsList
-      .map(crs => {
-        return {
-          action: RecordAction.Insert,
-          values: Object.assign({}, values, {permitted_station_crs: crs}),
-        }
-      });
+    return crsList.map(crs => {
+      return {
+        action: RecordAction.Insert,
+        values: Object.assign({}, values, {permitted_station_crs: crs}),
+      }
+    });
   }
 }
 
