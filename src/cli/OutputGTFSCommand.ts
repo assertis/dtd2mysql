@@ -84,9 +84,6 @@ export class OutputGTFSCommand implements CLICommand {
     const routes = {};
 
     for (const schedule of schedules) {
-      // const route = schedule.toRoute();
-      // const routeKey = this.getRouteKey(route);
-      // routes[routeKey] = routes[routeKey] || route;
       const routeId = this.getRoutesFromSchedule(schedule, routes);
       const serviceId = serviceIds[schedule.calendar.id];
 
