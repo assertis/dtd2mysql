@@ -1,6 +1,7 @@
 import {Writable} from "stream";
 import {MySQLTable} from "./MySQLTable";
 import {FeedFile} from "../feed/file/FeedFile";
+import {ParsedRecord} from "../feed/record/Record";
 
 export class MySQLStream extends Writable {
 
@@ -18,7 +19,11 @@ export class MySQLStream extends Writable {
       const record = this.file.getRecord(line);
 
       if (record) {
-        await this.tables[record.name].apply(record.extractValues(line));
+        const table = this.tables[record.name];
+        const valuesRaw = record.extractValues(line);
+        const values: ParsedRecord[] = Array.isArray(valuesRaw) ? valuesRaw : [valuesRaw];
+
+        values.forEach(async value => await table.apply(value));
       }
 
       callback();

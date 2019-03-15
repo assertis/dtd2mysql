@@ -5,7 +5,7 @@ import {ALFRecord} from "../../timetable/file/ALF";
 class FixedLinkRecord extends ALFRecord {
     public readonly name: string = "idms_fixed_link";
 
-    public extractValues(link: any): ParsedRecord {
+    public extractValues(link: IdmsFixedLinkRecord | any): ParsedRecord {
         if (typeof link.daysofweek === 'string') {
             link.daysofweek = [link.daysofweek];
         }
@@ -34,6 +34,8 @@ class FixedLinkRecord extends ALFRecord {
     }
 }
 
+export const idmsFixedLinksFilename = 'FixedLinks_v1.0.xml';
+
 export interface IdmsFixedLinkRecord {
     origin: {
         crs: string, // '1DA' 
@@ -51,7 +53,7 @@ export interface IdmsFixedLinkRecord {
     enddate: string, // '2999-12-31'
     starttime: string, // '00:00'
     endtime: string, // '23:59'
-    daysofweek: string[], // [ 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat' ]
+    daysofweek: string | string[], // [ 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat' ]
     daysmask: string, // '1111110'
     duration: string, // '60'
     priority: string,
@@ -62,6 +64,6 @@ export interface IdmsFixedLinkRecord {
     advicemessage: string
 }
 
-const FixedLinks_v10 = new XmlFile(new FixedLinkRecord());
+const FixedLinks_v10 = new XmlFile(idmsFixedLinksFilename, new FixedLinkRecord());
 
 export default FixedLinks_v10;

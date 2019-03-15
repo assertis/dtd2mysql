@@ -21,7 +21,8 @@ import {ImportIdmsFixedLinksCommand} from "./ImportIdmsFixedLinksCommand";
 import * as AWS from 'aws-sdk';
 import * as proxy from "proxy-agent";
 import {DownloadFileFromS3Command} from "./DownloadFileFromS3Command";
-import {idmsFixedLinksBucket, idmsFixedLinksPath, idmsFixedLinkUrl} from "../../config/idms";
+import {idmsBucket, idmsFixedLinksFilename, idmsGroupFilename, idmsPrefix, idmsUrl} from "../../config/idms";
+import {ImportIdmsGroupCommand} from "./ImportIdmsGroupCommand";
 
 export class Container {
 
@@ -33,7 +34,8 @@ export class Container {
       case "--routeing": return this.getRouteingImportCommand();
       case "--timetable": return this.getTimetableImportCommand();
       case "--nfm64": return this.getNFM64ImportCommand();
-      case "--idms-fixed-links": return this.getIdmsFixedLinksImportCommand();
+      case "--idms-fixed-links": return this.getImportIdmsFixedLinksCommand();
+      case "--idms-group": return this.getImportIdmsGroupCommand();
       case "--gtfs": return this.getOutputGTFSCommand();
       case "--gtfs-import": return this.getImportGTFSCommand();
       case "--gtfs-zip": return this.getOutputGTFSZipCommand();
@@ -42,11 +44,13 @@ export class Container {
       case "--download-routeing": return this.getDownloadCommand("/routing_guide/");
       case "--download-nfm64": return this.getDownloadNFM64Command();
       case "--download-idms-fixed-links": return this.getDownloadIdmsFixedLinksCommand();
+      case "--download-idms-group": return this.getDownloadIdmsGroupCommand();
       case "--get-fares": return this.getDownloadAndProcessCommand("/fares/", this.getFaresImportCommand());
       case "--get-timetable": return this.getDownloadAndProcessCommand("/timetable/", this.getTimetableImportCommand());
       case "--get-routeing": return this.getDownloadAndProcessCommand("/routing_guide/", this.getRouteingImportCommand());
       case "--get-nfm64": return this.getDownloadAndProcessNFM64Command();
       case "--get-idms-fixed-links": return this.getDownloadAndProcessIdmsFixedLinksCommand();
+      case "--get-idms-group": return this.getDownloadAndProcessIdmsGroupCommand();
       default: return this.getShowHelpCommand();
     }
   }
@@ -72,8 +76,13 @@ export class Container {
   }
 
   @memoize
-  public async getIdmsFixedLinksImportCommand(): Promise<ImportIdmsFixedLinksCommand> {
-    return new ImportIdmsFixedLinksCommand(await this.getDatabaseConnection(), config.idms, "/tmp/idms/fixed-links/");
+  public async getImportIdmsFixedLinksCommand(): Promise<ImportIdmsFixedLinksCommand> {
+    return new ImportIdmsFixedLinksCommand(await this.getDatabaseConnection(), config.idms, "/tmp/idms/");
+  }
+
+  @memoize
+  public async getImportIdmsGroupCommand(): Promise<ImportIdmsGroupCommand> {
+    return new ImportIdmsGroupCommand(await this.getDatabaseConnection(), config.idms, "/tmp/idms/");
   }
 
   @memoize
@@ -122,16 +131,25 @@ export class Container {
   private async getDownloadNFM64Command(): Promise<DownloadFileCommand> {
     return Promise.resolve(new DownloadFileCommand(nfm64DownloadUrl, 'nfm64.zip'));
   }
-
-  @memoize
-  private async getDownloadIdmsFixedLinksCommand(): Promise<DownloadFileFromS3Command | DownloadFileCommand> {
+  
+  private async getDownloadIdmsFileCommand(filename: string): Promise<DownloadFileFromS3Command | DownloadFileCommand> {
     const command = process.env.S3_KEY
-        // Download via S3 API
-        ? new DownloadFileFromS3Command(await this.getS3(), idmsFixedLinksBucket, idmsFixedLinksPath, 'FixedLinks_v1.0.xml')
-        // Download via HTTPS
-        : new DownloadFileCommand(idmsFixedLinkUrl, 'FixedLinks_v1.0.xml');
+      // Download via S3 API
+      ? new DownloadFileFromS3Command(await this.getS3(), idmsBucket, idmsPrefix + filename, filename)
+      // Download via HTTPS
+      : new DownloadFileCommand(idmsUrl + filename, filename);
 
     return Promise.resolve(command);
+  }
+  
+  @memoize
+  private async getDownloadIdmsFixedLinksCommand(): Promise<DownloadFileFromS3Command | DownloadFileCommand> {
+    return this.getDownloadIdmsFileCommand(idmsFixedLinksFilename);
+  }
+  
+  @memoize
+  private async getDownloadIdmsGroupCommand(): Promise<DownloadFileFromS3Command | DownloadFileCommand> {
+    return this.getDownloadIdmsFileCommand(idmsGroupFilename);
   }
   
   private async getS3(): Promise<AWS.S3> {
@@ -178,7 +196,15 @@ export class Container {
   private async getDownloadAndProcessIdmsFixedLinksCommand(): Promise<DownloadAndProcessCommand> {
     return new DownloadAndProcessCommand(
       await this.getDownloadIdmsFixedLinksCommand(),
-      await this.getIdmsFixedLinksImportCommand()
+      await this.getImportIdmsFixedLinksCommand()
+    );
+  }
+
+  @memoize
+  private async getDownloadAndProcessIdmsGroupCommand(): Promise<DownloadAndProcessCommand> {
+    return new DownloadAndProcessCommand(
+      await this.getDownloadIdmsGroupCommand(),
+      await this.getImportIdmsGroupCommand()
     );
   }
 

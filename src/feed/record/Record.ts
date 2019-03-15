@@ -1,4 +1,3 @@
-
 import {Field, FieldValue} from "../field/Field";
 
 export interface Record extends MysqlRecord{
@@ -8,7 +7,7 @@ export interface Record extends MysqlRecord{
   /**
    * Turn the given line into a list of values
    */
-  extractValues(line: string): ParsedRecord;
+  extractValues(line: string): ParsedRecord | ParsedRecord[];
 
 }
 
