@@ -1,13 +1,16 @@
-
-import FixedLinks_v10 from "./file/FixedLinks_v1.0";
+import FixedLinks_v10, {idmsFixedLinksFilename} from "./file/FixedLinks_v1.0";
+import FareGroupPermittedStations_v10, {idmsGroupFilename} from "./file/FareGroupPermittedStations_v1.0";
 import {FeedConfig} from "../index";
 
-export const idmsFixedLinksBucket = "ride-data";
-export const idmsFixedLinksPath = "idms/FixedLinks_v1.0.xml";
-export const idmsFixedLinkUrl = "https://s3-eu-west-1.amazonaws.com/" + idmsFixedLinksBucket + "/" + idmsFixedLinksPath;
+export const idmsBucket = "ride-data";
+export const idmsPrefix = "idms/";
+export const idmsUrl = "https://s3-eu-west-1.amazonaws.com/" + idmsBucket + "/" + idmsPrefix;
 
 const specification: FeedConfig = {
-  "": FixedLinks_v10
+  [idmsFixedLinksFilename]: FixedLinks_v10,
+  [idmsGroupFilename]: FareGroupPermittedStations_v10,
 };
 
 export default specification;
+export * from "./file/FixedLinks_v1.0";
+export * from "./file/FareGroupPermittedStations_v1.0";

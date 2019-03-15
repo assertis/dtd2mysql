@@ -1,4 +1,3 @@
-
 import {DatabaseConnection} from "./DatabaseConnection";
 import {ParsedRecord, RecordAction} from "../feed/record/Record";
 
