@@ -1,5 +1,5 @@
 
-import {StopTime} from "../file/StopTime";
+import {Activity, StopTime} from "../file/StopTime";
 import {OverlapType, ScheduleCalendar} from "./ScheduleCalendar";
 import {Trip} from "../file/Trip";
 import {Route, RouteType} from "../file/Route";
@@ -24,7 +24,7 @@ export class Schedule implements OverlayRecord {
     public readonly stp: STP,
     public readonly firstClassAvailable: boolean,
     public readonly reservationPossible: boolean,
-    public readonly activity: string
+    public readonly activity: Activity
   ) {}
 
   public get origin(): CRS {
