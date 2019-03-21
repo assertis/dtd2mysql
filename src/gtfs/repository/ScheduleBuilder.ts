@@ -94,7 +94,7 @@ export class ScheduleBuilder {
     );
   }
 
-  private getActivities(activity: string) {
+  public getActivities(activity: string) {
     let activitiesPairs = activity.match(/.{1,2}/g);
     const result:string[] = [];
     if(Array.isArray(activitiesPairs)) {
