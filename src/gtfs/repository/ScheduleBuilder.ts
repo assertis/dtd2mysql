@@ -4,7 +4,7 @@ import {RouteType} from "../file/Route";
 import moment = require("moment");
 import {ScheduleCalendar} from "../native/ScheduleCalendar";
 import {ScheduleStopTimeRow} from "./CIFRepository";
-import {StopTime} from "../file/StopTime";
+import {ActivityMap, StopTime} from "../file/StopTime";
 
 const pickupActivities = ["T ", "TB", "U "];
 const dropOffActivities = ["T ", "TF", "D "];
@@ -94,6 +94,21 @@ export class ScheduleBuilder {
     );
   }
 
+  public getActivities(activity: string) {
+    let activitiesPairs = activity.match(/.{1,2}/g);
+    const result:string[] = [];
+    if(Array.isArray(activitiesPairs)) {
+      activitiesPairs = activitiesPairs.map(a => a.trim());
+      for (const pair of activitiesPairs) {
+        if (ActivityMap.hasOwnProperty(pair)) {
+          result.push(pair);
+          result.push(ActivityMap[pair]);
+        }
+      }
+    }
+    return result.length > 0 ? result.join('-') : null; // Join by sth different than ; or , because we load CSV files to database later
+  }
+
   private createStop(row: ScheduleStopTimeRow, stopId: number, departHour: number): StopTime {
     let arrivalTime, departureTime;
 
@@ -112,6 +127,7 @@ export class ScheduleBuilder {
     const pickup = pickupActivities.find(a => activities.includes(a)) && !activities.includes(notAdvertised) ? 0 : 1;
     const coordinatedDropOff = coordinatedActivity.find(a => activities.includes(a)) ? 3 : 0;
     const dropOff = dropOffActivities.find(a => activities.includes(a)) ? 0 : 1;
+    const activitiesPatterns = row.activity !== null ? this.getActivities(row.activity) : null;
 
     return {
       trip_id: row.id,
@@ -124,7 +140,7 @@ export class ScheduleBuilder {
       drop_off_type: coordinatedDropOff || dropOff,
       shape_dist_traveled: null,
       timepoint: 1,
-      activity: row.activity.trimRight()
+      activity: activitiesPatterns
     };
   }
 
