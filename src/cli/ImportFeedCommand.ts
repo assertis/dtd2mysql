@@ -1,6 +1,6 @@
 import AdmZip = require("adm-zip");
 import {CLICommand} from "./CLICommand";
-import {FeedConfig} from "../../config";
+import {FeedConfig, viewsSqlFactory} from "../../config";
 import {FeedFile} from "../feed/file/FeedFile";
 import {MySQLSchema} from "../database/MySQLSchema";
 import {DatabaseConnection} from "../database/DatabaseConnection";
@@ -13,6 +13,8 @@ import {RecordWithManualIdentifier} from "../feed/record/FixedWidthRecord";
 import {MySQLStream, TableIndex} from "../database/MySQLStream";
 import byline = require("byline");
 import streamToPromise = require("stream-to-promise");
+import {faresView} from "../../config/fares/views";
+import {OfflineDataProcessor} from "../database/OfflineDataProcessor";
 
 const getExt = filename => path.extname(filename).slice(1).toUpperCase();
 const readFile = filename => byline.createStream(fs.createReadStream(filename, "utf8"));
@@ -27,7 +29,8 @@ export class ImportFeedCommand implements CLICommand {
   constructor(
     protected readonly db: DatabaseConnection,
     protected readonly files: FeedConfig,
-    protected readonly tmpFolder: string
+    protected readonly tmpFolder: string,
+    protected readonly offlineDataProcessor: OfflineDataProcessor
   ) { }
 
   protected get fileArray(): FeedFile[] {
@@ -40,6 +43,9 @@ export class ImportFeedCommand implements CLICommand {
   public async run(argv: string[]): Promise<void> {
     try {
       await this.doImport(argv[3]);
+      await this.db.query(
+        this.offlineDataProcessor.getViews()
+      );
     }
     catch (err) {
       console.error(err);
@@ -77,6 +83,8 @@ export class ImportFeedCommand implements CLICommand {
     );
 
     await this.updateLastFile(zipName);
+
+
   }
 
   /**
@@ -119,7 +127,7 @@ export class ImportFeedCommand implements CLICommand {
   }
 
   private updateLastFile(filename: string): Promise<void> {
-    return this.db.query("INSERT INTO log VALUES (null, ?, NOW())", [filename]);
+    return this.db.query("INSERT INTO log (filename,processed) VALUES (?, NOW())", [filename]);
   }
 
   /**

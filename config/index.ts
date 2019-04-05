@@ -17,3 +17,9 @@ export default {
   nfm64,
   idms
 };
+
+export function viewsSqlFactory(views: string, databaseWithData: string, orgdb: string): string {
+  return views
+    .replace(new RegExp(/{dbname}/g), databaseWithData)
+    .replace(new RegExp(/{orgdb}/g), orgdb);
+}

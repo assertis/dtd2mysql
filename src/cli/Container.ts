@@ -2,7 +2,7 @@ import * as memoize from "memoized-class-decorator";
 import {CLICommand} from "./CLICommand";
 import {ImportFeedCommand} from "./ImportFeedCommand";
 import {DatabaseConfiguration, DatabaseConnection} from "../database/DatabaseConnection";
-import config from "../../config";
+import config, {viewsSqlFactory} from "../../config";
 import {CleanFaresCommand} from "./CleanFaresCommand";
 import {ShowHelpCommand} from "./ShowHelpCommand";
 import {OutputGTFSCommand} from "./OutputGTFSCommand";
@@ -23,66 +23,125 @@ import * as proxy from "proxy-agent";
 import {DownloadFileFromS3Command} from "./DownloadFileFromS3Command";
 import {idmsBucket, idmsFixedLinksFilename, idmsGroupFilename, idmsPrefix, idmsUrl} from "../../config/idms";
 import {ImportIdmsGroupCommand} from "./ImportIdmsGroupCommand";
+import {
+  createOfflineDatabase,
+  OfflineDataProcessor,
+  temporaryDatabaseNameFactory
+} from "../database/OfflineDataProcessor";
+import {faresView} from "../../config/fares/views";
 
 export class Container {
 
   @memoize
   public getCommand(type: string): Promise<CLICommand> {
     switch (type) {
-      case "--fares": return this.getFaresImportCommand();
-      case "--fares-clean": return this.getCleanFaresCommand();
-      case "--routeing": return this.getRouteingImportCommand();
-      case "--timetable": return this.getTimetableImportCommand();
-      case "--nfm64": return this.getNFM64ImportCommand();
-      case "--idms-fixed-links": return this.getImportIdmsFixedLinksCommand();
-      case "--idms-group": return this.getImportIdmsGroupCommand();
-      case "--gtfs": return this.getOutputGTFSCommand();
-      case "--gtfs-import": return this.getImportGTFSCommand();
-      case "--gtfs-zip": return this.getOutputGTFSZipCommand();
-      case "--download-fares": return this.getDownloadCommand("/fares/");
-      case "--download-timetable": return this.getDownloadCommand("/timetable/");
-      case "--download-routeing": return this.getDownloadCommand("/routing_guide/");
-      case "--download-nfm64": return this.getDownloadNFM64Command();
-      case "--download-idms-fixed-links": return this.getDownloadIdmsFixedLinksCommand();
-      case "--download-idms-group": return this.getDownloadIdmsGroupCommand();
-      case "--get-fares": return this.getDownloadAndProcessCommand("/fares/", this.getFaresImportCommand());
-      case "--get-timetable": return this.getDownloadAndProcessCommand("/timetable/", this.getTimetableImportCommand());
-      case "--get-routeing": return this.getDownloadAndProcessCommand("/routing_guide/", this.getRouteingImportCommand());
-      case "--get-nfm64": return this.getDownloadAndProcessNFM64Command();
-      case "--get-idms-fixed-links": return this.getDownloadAndProcessIdmsFixedLinksCommand();
-      case "--get-idms-group": return this.getDownloadAndProcessIdmsGroupCommand();
-      default: return this.getShowHelpCommand();
+      case "--fares":
+        return this.getFaresImportCommand();
+      case "--fares-clean":
+        return this.getCleanFaresCommand();
+      case "--routeing":
+        return this.getRouteingImportCommand();
+      case "--timetable":
+        return this.getTimetableImportCommand();
+      case "--nfm64":
+        return this.getNFM64ImportCommand();
+      case "--idms-fixed-links":
+        return this.getImportIdmsFixedLinksCommand();
+      case "--idms-group":
+        return this.getImportIdmsGroupCommand();
+      case "--gtfs":
+        return this.getOutputGTFSCommand();
+      case "--gtfs-import":
+        return this.getImportGTFSCommand();
+      case "--gtfs-zip":
+        return this.getOutputGTFSZipCommand();
+      case "--download-fares":
+        return this.getDownloadCommand("/fares/");
+      case "--download-timetable":
+        return this.getDownloadCommand("/timetable/");
+      case "--download-routeing":
+        return this.getDownloadCommand("/routing_guide/");
+      case "--download-nfm64":
+        return this.getDownloadNFM64Command();
+      case "--download-idms-fixed-links":
+        return this.getDownloadIdmsFixedLinksCommand();
+      case "--download-idms-group":
+        return this.getDownloadIdmsGroupCommand();
+      case "--get-fares":
+        return this.getDownloadAndProcessCommand("/fares/", this.getFaresImportCommand());
+      case "--get-timetable":
+        return this.getDownloadAndProcessCommand("/timetable/", this.getTimetableImportCommand());
+      case "--get-routeing":
+        return this.getDownloadAndProcessCommand("/routing_guide/", this.getRouteingImportCommand());
+      case "--get-nfm64":
+        return this.getDownloadAndProcessNFM64Command();
+      case "--get-idms-fixed-links":
+        return this.getDownloadAndProcessIdmsFixedLinksCommand();
+      case "--get-idms-group":
+        return this.getDownloadAndProcessIdmsGroupCommand();
+      default:
+        return this.getShowHelpCommand();
     }
   }
 
   @memoize
   public async getFaresImportCommand(): Promise<ImportFeedCommand> {
-    return new ImportFeedCommand(await this.getDatabaseConnection(), config.fares, "/tmp/dtd/fares/");
+    return new ImportFeedCommand(
+      await this.getDatabaseConnection(),
+      config.fares,
+      "/tmp/dtd/fares/",
+      this.getOfflineDataProcessor()
+    );
   }
 
   @memoize
   public async getRouteingImportCommand(): Promise<ImportFeedCommand> {
-    return new ImportFeedCommand(await this.getDatabaseConnection(), config.routeing, "/tmp/dtd/routeing/");
+    return new ImportFeedCommand(
+      await this.getDatabaseConnection(),
+      config.routeing,
+      "/tmp/dtd/routeing/",
+      this.getOfflineDataProcessor()
+    );
   }
 
   @memoize
   public async getTimetableImportCommand(): Promise<ImportFeedCommand> {
-    return new ImportFeedCommand(await this.getDatabaseConnection(), config.timetable, "/tmp/dtd/timetable/");
+    return new ImportFeedCommand(
+      await this.getDatabaseConnection(),
+      config.timetable,
+      "/tmp/dtd/timetable/",
+      this.getOfflineDataProcessor()
+    );
   }
 
   @memoize
   public async getNFM64ImportCommand(): Promise<ImportFeedCommand> {
-    return new ImportFeedCommand(await this.getDatabaseConnection(), config.nfm64, "/tmp/dtd/nfm64/");
+    return new ImportFeedCommand(
+      await this.getDatabaseConnection(),
+      config.nfm64,
+      "/tmp/dtd/nfm64/",
+      this.getOfflineDataProcessor()
+    );
   }
 
   @memoize
   public async getImportIdmsFixedLinksCommand(): Promise<ImportIdmsFixedLinksCommand> {
-    return new ImportIdmsFixedLinksCommand(await this.getDatabaseConnection(), config.idms, "/tmp/idms/");
+    return new ImportIdmsFixedLinksCommand(
+      await this.getDatabaseConnection(),
+      config.idms,
+      "/tmp/idms/",
+      this.getOfflineDataProcessor()
+    );
   }
 
   @memoize
   public async getImportIdmsGroupCommand(): Promise<ImportIdmsGroupCommand> {
-    return new ImportIdmsGroupCommand(await this.getDatabaseConnection(), config.idms, "/tmp/idms/");
+    return new ImportIdmsGroupCommand(
+      await this.getDatabaseConnection(),
+      config.idms,
+      "/tmp/idms/",
+      this.getOfflineDataProcessor()
+    );
   }
 
   @memoize
@@ -97,7 +156,7 @@ export class Container {
 
   @memoize
   public getImportGTFSCommand(): Promise<GTFSImportCommand> {
-    return Promise.resolve(new GTFSImportCommand(this.databaseConfiguration));
+    return Promise.resolve(new GTFSImportCommand(this.databaseConfiguration, this.getOfflineDataProcessor(false)));
   }
 
   @memoize
@@ -131,7 +190,7 @@ export class Container {
   private async getDownloadNFM64Command(): Promise<DownloadFileCommand> {
     return Promise.resolve(new DownloadFileCommand(nfm64DownloadUrl, 'nfm64.zip'));
   }
-  
+
   private async getDownloadIdmsFileCommand(filename: string): Promise<DownloadFileFromS3Command | DownloadFileCommand> {
     const command = process.env.S3_KEY
       // Download via S3 API
@@ -141,70 +200,89 @@ export class Container {
 
     return Promise.resolve(command);
   }
-  
+
   @memoize
   private async getDownloadIdmsFixedLinksCommand(): Promise<DownloadFileFromS3Command | DownloadFileCommand> {
     return this.getDownloadIdmsFileCommand(idmsFixedLinksFilename);
   }
-  
+
   @memoize
   private async getDownloadIdmsGroupCommand(): Promise<DownloadFileFromS3Command | DownloadFileCommand> {
     return this.getDownloadIdmsFileCommand(idmsGroupFilename);
   }
-  
+
   private async getS3(): Promise<AWS.S3> {
     const key = process.env.S3_KEY;
     const secret = process.env.S3_SECRET;
     const region = process.env.S3_REGION || 'eu-west-1';
     const proxyUrl = process.env.S3_PROXY;
     const debug = process.env.DEBUG;
-    
+
     if (!key || !secret) {
       throw new Error('S3_KEY and S3_SECRET environment variables need to be set in order to download IDMS data');
     }
-    
+
     const config: AWS.S3.Types.ClientConfiguration = {
       region: region,
       credentials: new AWS.Credentials(key, secret),
     };
-    
+
     if (debug) {
       config.logger = console;
     }
-    
+
     if (proxyUrl) {
-      config.httpOptions = { agent: proxy(proxyUrl)};
+      config.httpOptions = {agent: proxy(proxyUrl)};
     }
 
     return new AWS.S3(config);
   }
 
   @memoize
-  private async getDownloadAndProcessCommand(path: string, process: Promise<ImportFeedCommand>): Promise<DownloadAndProcessCommand> {
-    return new DownloadAndProcessCommand(await this.getDownloadCommand(path), await process);
+  private async getDownloadAndProcessCommand(path: string, importFeedProcess: Promise<ImportFeedCommand>): Promise<DownloadAndProcessCommand> {
+    const offlineDataProcessor = this.getOfflineDataProcessor();
+
+    return new DownloadAndProcessCommand(
+      await this.getDownloadCommand(path),
+      await importFeedProcess,
+      await this.getDatabaseConnection(),
+      offlineDataProcessor,
+    );
   }
 
   @memoize
   private async getDownloadAndProcessNFM64Command(): Promise<DownloadAndProcessCommand> {
+    const offlineDataProcessor = this.getOfflineDataProcessor();
+
     return new DownloadAndProcessCommand(
       await this.getDownloadNFM64Command(),
-      await this.getNFM64ImportCommand()
+      await this.getNFM64ImportCommand(),
+      await this.getDatabaseConnection(),
+      offlineDataProcessor,
     );
   }
 
   @memoize
   private async getDownloadAndProcessIdmsFixedLinksCommand(): Promise<DownloadAndProcessCommand> {
+    const offlineDataProcessor = this.getOfflineDataProcessor();
+
     return new DownloadAndProcessCommand(
       await this.getDownloadIdmsFixedLinksCommand(),
-      await this.getImportIdmsFixedLinksCommand()
+      await this.getImportIdmsFixedLinksCommand(),
+      await this.getDatabaseConnection(),
+      offlineDataProcessor
     );
   }
 
   @memoize
   private async getDownloadAndProcessIdmsGroupCommand(): Promise<DownloadAndProcessCommand> {
+    const offlineDataProcessor = this.getOfflineDataProcessor();
+
     return new DownloadAndProcessCommand(
       await this.getDownloadIdmsGroupCommand(),
-      await this.getImportIdmsGroupCommand()
+      await this.getImportIdmsGroupCommand(),
+      await this.getDatabaseConnection(),
+      offlineDataProcessor
     );
   }
 
@@ -224,7 +302,6 @@ export class Container {
   public getDatabaseConnection(): DatabaseConnection {
     return require('mysql2/promise').createPool({
       ...this.databaseConfiguration,
-      //debug: ['ComQueryPacket', 'RowDataPacket']
     });
   }
 
@@ -243,10 +320,21 @@ export class Container {
       host: process.env.DATABASE_HOSTNAME || "localhost",
       user: process.env.DATABASE_USERNAME || "root",
       password: process.env.DATABASE_PASSWORD || null,
-      database: <string>process.env.DATABASE_NAME,
+      database: <string>temporaryDatabaseNameFactory(process.env.DATABASE_NAME),
       connectionLimit: 20,
       multipleStatements: true
     };
+  }
+
+  @memoize
+  public getOfflineDataProcessor(cloneOriginalDb: boolean = true): OfflineDataProcessor {
+    const offlineDataProcessor = new OfflineDataProcessor(
+      process.env.DATABASE_NAME || "",
+      this.databaseConfiguration
+    );
+    offlineDataProcessor.removeOutdatedOfflineDatabase();
+    offlineDataProcessor.createOfflineDatabase(cloneOriginalDb);
+    return offlineDataProcessor;
   }
 
 }
