@@ -115,6 +115,29 @@ Then add the following environment variables to the call:
 S3_KEY="[your S3 key]" S3_SECRET="[your S3 secret]" S3_REGION="[your S3 region]" S3_PROXY="socks5://127.0.0.1:12345" dtd2mysql --download-idms-fixed-links /tmp/FixedLinks_v1.0.xml
 ```
 
+## Offline data processing
+
+Since April 2019 data update clone the `original` database `db` to `db_dd_mm`
+where `dd` is day of month number and `mm` is month number.
+
+The word `original` means it's the last correct database with data.
+So day after day this process can look like that:
+* copy `fares` (`original` database) to `fares_01_01`
+* update fares data in `fares_01_01` and create views in `fares` which will select data from `fares_01_01`
+* Next day copy `fares_01_01` to `fares_02_01` (because `original` database is `fares_01_01` now). But view will always be created in `fares`
+
+Few benefits of that:
+* Receiver/customer doesn't have to worry which database to use because `fares` database is always connected to the newest data.
+* We keep in database `fares`, `fares_01_01`, `fares_02_01` so database with views, database with data from yesterday and from the day before yesterday
+* In case when data update break our services you can simply switch to the older database.
+Let's say that update which we have in `fares_04_01` breaks something.
+By using `npm run dataVersion fares fares_03_01` you switch the views in `fares` to use data from `fares_03_01`
+when everything was fine. You still have access to `fares_03_01` so you can investigate on your machine what happened, but bring service back really fast by switching the databases.
+But if `fares_03_01` also has corrupted data you can also switch it to the database from the day before yesterday `fares_02_01` because it will also be accessible in database.
+Older databases so `fares_01_01` for example are always cleaned when we run update.
+
+If database for "today" exists update will be performed on existing dataabse
+and views will be just updated.  
 
 ## Notes
 ### null values

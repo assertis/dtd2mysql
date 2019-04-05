@@ -16,7 +16,7 @@ export const ojpViews = 'START TRANSACTION;' +
   DROP TABLE IF EXISTS {orgdb}.${j};
   CREATE OR REPLACE VIEW {orgdb}.${j} AS SELECT * FROM {dbname}.${j};
   `).join('') +
-  'CREATE OR REPLACE VIEW {orgdb}.transfer_patterns AS SELECT * FROM tp.transfer_patterns;'
+  'CREATE OR REPLACE VIEW {orgdb}.transfer_patterns AS SELECT * FROM transfer_patterns.transfer_patterns;'
   ' COMMIT;';
 
 
