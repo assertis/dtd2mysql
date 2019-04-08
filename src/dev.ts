@@ -1,6 +1,7 @@
-import {Container} from "./cli/Container";
 
 
-const container = new Container();
+const r  = new RegExp(/^fares_/);
 
-container.getOfflineDataProcessor().removeOutdatedOfflineDatabase();
+console.log(
+  'fares_01_01'.match(r)
+)

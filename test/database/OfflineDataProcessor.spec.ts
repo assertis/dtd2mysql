@@ -40,7 +40,7 @@ describe("OfflineDataProcessor", () => {
       executor
     );
     // Will return original database name
-    chai.expect(offlineDataProcessor.getOriginalDatabase()).to.equal('test');
+    chai.expect(offlineDataProcessor.getOriginalDatabase()).to.equal('test_01_02');
   });
 
   it("Return database name from yesterday when it exists", () => {
@@ -74,7 +74,7 @@ describe("OfflineDataProcessor", () => {
     const executor = (command: string, options?: ExecSyncOptions) => {
       return `
       test
-      ${dbFromYesterday},
+      ${dbFromYesterday}
       ${dbFromDayBeforeYesterday}
       `;
     };

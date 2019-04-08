@@ -41,7 +41,10 @@ export class OfflineDataProcessor {
   public getOriginalDatabase(): string {
     const query = `mysql ${this.credentials} -e "SHOW DATABASES"`;
 
-    const result = this.commandExecutor(`${query}`, this.execSyncOptions).toString();
+    const result: string[] = this.commandExecutor(`${query}`, this.execSyncOptions)
+      .toString()
+      .split('\n')
+      .map(s => s.trim());
 
     if (result.includes(this.getTemporaryDatabaseName())) {
       throw new Error('Database already exists')
@@ -52,9 +55,20 @@ export class OfflineDataProcessor {
     if (result.includes(this.dbNameFromDayBeforeYesterday)) {
       return this.dbNameFromDayBeforeYesterday;
     }
+    // If there is no database from yesterday, from day before yesterday try to find the latest database
+    const pattern = this.databaseName + '_';
+    const regExp = new RegExp(pattern, 'g');
+    const matchingDatabases = result.filter(db => db.match(regExp)).sort().reverse();
+    // Return last database with data if exists
+    if(matchingDatabases.length > 0) {
+      return matchingDatabases[0];
+    }
+
+    // If there is no database with data use original database name
     if (result.includes(this.databaseName)) {
       return this.databaseName;
     }
+
     throw new Error('There is no original database to copy');
   }
 
@@ -87,6 +101,8 @@ export class OfflineDataProcessor {
         this.commandExecutor(`${command}`, this.execSyncOptions);
       });
     }
+    // Remove old databases when original is cloned
+    this.removeOutdatedOfflineDatabase();
   }
 
   public getViews(dbWithData: string = this.getTemporaryDatabaseName()): string {
@@ -131,7 +147,7 @@ export class OfflineDataProcessor {
       this.dbNameFromYesterday,
       this.getTemporaryDatabaseName()
     ];
-    // Remove odd databases
+    // Remove old databases
     for (const dbName of result) {
       if (dbName.indexOf(this.databaseName) !== -1 && !doNotRemove.includes(dbName)) {
         const deleteCommand = `mysql ${this.credentials} -e "DROP DATABASE IF EXISTS ${dbName};"`;

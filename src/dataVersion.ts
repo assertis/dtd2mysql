@@ -8,15 +8,18 @@ import {viewsSqlFactory} from "../config";
 import {ojpViews} from "../config/gtfs/views";
 import {OfflineDataProcessor} from "./database/OfflineDataProcessor";
 
-const container = new Container();
+/**
+ * It's wrapped in function because
+ * we execute await there.
+ */
+const linkViewsToOtherDatabase = async () => {
+  const container = new Container();
 
-const f = async () => {
+  const databaseWithViews = process.argv[ 2 ];
+  const databaseWithData = process.argv[ 3 ];
 
-  const databaseWithViews = process.argv[2];
-  const databaseWithData = process.argv[3];
-
-  if (databaseWithViews.length === 0 ||
-    databaseWithData.length === 0) {
+  if (databaseWithViews !== null ||
+      databaseWithData !== null) {
     throw new Error('Missing arguments npm run dataVersion {dbWithViews} {dbWithData}');
   }
   process.env.DATABASE_NAME = databaseWithViews;
@@ -24,15 +27,15 @@ const f = async () => {
   console.info('[INFO] Database with views => ', databaseWithViews);
   console.info('[INFO] Database with data => ', databaseWithData);
   const offlineDataProcessor = new OfflineDataProcessor(
-    databaseWithViews,
-    container.databaseConfiguration
+      databaseWithViews,
+      container.databaseConfiguration
   );
   const viewsSql = offlineDataProcessor.getViews(databaseWithData);
   console.info('[INFO] SQL Query => ', viewsSql);
 
-// Realise the query
+  // Execute the query
   try {
-    const result = await container.getDatabaseConnection().query(viewsSql);
+    await container.getDatabaseConnection().query(viewsSql);
     console.info('[INFO] Query finished.')
   } catch (err) {
     console.error(err);
@@ -40,4 +43,4 @@ const f = async () => {
   process.exit(0);
 };
 
-f();
+linkViewsToOtherDatabase();

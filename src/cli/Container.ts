@@ -332,7 +332,6 @@ export class Container {
       process.env.DATABASE_NAME || "",
       this.databaseConfiguration
     );
-    offlineDataProcessor.removeOutdatedOfflineDatabase();
     offlineDataProcessor.createOfflineDatabase(cloneOriginalDb);
     return offlineDataProcessor;
   }
