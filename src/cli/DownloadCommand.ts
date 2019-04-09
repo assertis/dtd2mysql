@@ -27,7 +27,7 @@ export class DownloadCommand implements CLICommand {
       console.log(`Downloading ${files.length} feed file(s)`);
     }
     else {
-      console.log("No files to update.");
+      console.log("No files to update. Last processed file => ", lastProcessedFile);
     }
 
     try {

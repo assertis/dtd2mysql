@@ -1,6 +1,6 @@
 {
   "name": "@assertis/dtd2mysql",
-  "version": "6.6.0",
+  "version": "6.7.0",
   "description": "Command line tool to put the GB rail DTD feed into a MySQL compatible database",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -15,7 +15,9 @@
     "prepublishOnly": "tsc -p ./ --outDir dist/ && cp -r config/timetable/data dist/config/timetable/data",
     "gtfs": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --gtfs",
     "gtfs-import": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --gtfs-import",
-    "gtfs-zip": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --gtfs-zip"
+    "gtfs-zip": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --gtfs-zip",
+    "dataVersion": "ts-node ./src/dataVersion.ts",
+    "dev": "ts-node ./src/dev.ts"
   },
   "repository": {
     "type": "git",
@@ -42,6 +44,7 @@
     "byline": "^5.0.0",
     "csv-write-stream": "^2.0.0",
     "fs-extra": "^7.0.0",
+    "js-joda": "^1.9.3",
     "memoized-class-decorator": "^1.6.1",
     "moment": "^2.23.0",
     "mysql2": "^1.6.1",
