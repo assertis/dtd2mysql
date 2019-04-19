@@ -115,6 +115,7 @@ Then add the following environment variables to the call:
 S3_KEY="[your S3 key]" S3_SECRET="[your S3 secret]" S3_REGION="[your S3 region]" S3_PROXY="socks5://127.0.0.1:12345" dtd2mysql --download-idms-fixed-links /tmp/FixedLinks_v1.0.xml
 ```
 
+
 ## Offline data processing
 
 Since April 2019 data update clone the `original` database `db` to `db_dd_mm`
@@ -139,6 +140,14 @@ Older databases so `fares_01_01` for example are always cleaned when we run upda
 If database for "today" exists update will be performed on existing dataabse
 and views will be just updated.  
 
+
+## Switching views in original database
+
+If you want to link views for specific database please use e.g. 
+`DATABASE_NAME=ojp DATABASE_HOSTNAME= DATABASE_USERNAME= DATABASE_PASSWORD= npm run dataVersion ojp ojp_18_04`
+
+In other words rebuild all views for `ojp` and as a source use `ojp_18_04`.
+ 
 ## Notes
 ### null values
 

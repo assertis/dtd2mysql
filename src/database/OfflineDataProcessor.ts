@@ -31,10 +31,7 @@ export class OfflineDataProcessor {
   }
 
   public getTemporaryDatabaseName(dbName: string = this.databaseName, date: LocalDate = LocalDate.now()) {
-    const dateStr: string = date.format(
-      DateTimeFormatter.ofPattern(OfflineDataProcessor.DATE_FORMAT)
-    );
-    return [dbName, dateStr].join('_');
+    return temporaryDatabaseNameFactory(dbName, date);
   }
 
   @memoize
@@ -80,6 +77,7 @@ export class OfflineDataProcessor {
     }
     catch (err) {
       console.log('[INFO] No need of copying database because it`s already exists. Performing update on ' + this.getTemporaryDatabaseName());
+      this.removeOutdatedOfflineDatabase();
       return; // Database already exists
     }
     const temporaryDatabase = this.getTemporaryDatabaseName(this.databaseName);
@@ -176,16 +174,6 @@ export function createOfflineDatabase(databaseConfiguration: DatabaseConfigurati
       execSync(`${command}`, {cwd: path});
     });
   }
-}
-
-export function removeOutdatedOfflineDatabases(databaseConfiguration: DatabaseConfiguration) {
-
-  const databaseName = temporaryDatabaseNameFactory(
-    databaseConfiguration.database,
-    LocalDate.now().minusDays(2)
-  );
-  const query = 'DROP DATABASE IF EXISTS ' + databaseName;
-  execSync(`${query}`, {cwd: './'});
 }
 
 export function temporaryDatabaseNameFactory(dbName: string, date: LocalDate = LocalDate.now()) {
