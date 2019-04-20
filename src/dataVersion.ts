@@ -15,11 +15,11 @@ import {OfflineDataProcessor} from "./database/OfflineDataProcessor";
 const linkViewsToOtherDatabase = async () => {
   const container = new Container();
 
-  const databaseWithViews = process.argv[ 2 ];
-  const databaseWithData = process.argv[ 3 ];
+  const databaseWithViews = process.argv[2];
+  const databaseWithData = process.argv[3];
 
-  if (databaseWithViews !== null ||
-      databaseWithData !== null) {
+  if (databaseWithViews === null ||
+      databaseWithData === null) {
     throw new Error('Missing arguments npm run dataVersion {dbWithViews} {dbWithData}');
   }
   process.env.DATABASE_NAME = databaseWithViews;
