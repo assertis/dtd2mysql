@@ -90,9 +90,9 @@ export class OfflineDataProcessor {
       console.log('[INFO] Copying database ' + originalDb + ' to ' + temporaryDatabase);
       // Create database and insert data
       const commands = [
-        `mysqldump ${dumpOnlyStructure} ${this.credentials}  ${originalDb} > ${originalDb}.sql`,
-        `mysql ${this.credentials} ${temporaryDatabase} < ${originalDb}.sql`,
-        `rm -rf ${originalDb}.sql`
+        // `mysqldump ${dumpOnlyStructure} ${this.credentials}  ${originalDb} > ${originalDb}.sql`,
+        // `mysql ${this.credentials} ${temporaryDatabase} < ${originalDb}.sql`,
+        // `rm -rf ${originalDb}.sql`
       ];
 
       commands.forEach(command => {
@@ -148,9 +148,9 @@ export class OfflineDataProcessor {
     // Remove old databases
     for (const dbName of result) {
       if (dbName.indexOf(this.databaseName) !== -1 && !doNotRemove.includes(dbName)) {
-        const deleteCommand = `mysql ${this.credentials} -e "DROP DATABASE IF EXISTS ${dbName};"`;
-        console.log(`[INFO] Removing outdated database ${dbName}`);
-        this.commandExecutor(deleteCommand, this.execSyncOptions);
+        // const deleteCommand = `mysql ${this.credentials} -e "DROP DATABASE IF EXISTS ${dbName};"`;
+        // console.log(`[INFO] Removing outdated database ${dbName}`);
+        // this.commandExecutor(deleteCommand, this.execSyncOptions);
       }
     }
   }
@@ -166,8 +166,8 @@ export function createOfflineDatabase(databaseConfiguration: DatabaseConfigurati
   if (cloneOriginalDb) {
     // Create database and insert data
     const commands = [
-      `mysqldump ${dumpOnlyStructure} -h${databaseConfiguration.host} -u${databaseConfiguration.user} ${databaseConfiguration.password ? "-p" + databaseConfiguration.password : ""} ${originalDb} > ${originalDb}.sql`,
-      `mysql -h ${databaseConfiguration.host} -u ${databaseConfiguration.user} ${databaseConfiguration.password ? "-p" + databaseConfiguration.password : ""} ${temporaryDatabase} < ${originalDb}.sql`,
+      // `mysqldump ${dumpOnlyStructure} -h${databaseConfiguration.host} -u${databaseConfiguration.user} ${databaseConfiguration.password ? "-p" + databaseConfiguration.password : ""} ${originalDb} > ${originalDb}.sql`,
+      // `mysql -h ${databaseConfiguration.host} -u ${databaseConfiguration.user} ${databaseConfiguration.password ? "-p" + databaseConfiguration.password : ""} ${temporaryDatabase} < ${originalDb}.sql`,
     ];
 
     commands.forEach(command => {

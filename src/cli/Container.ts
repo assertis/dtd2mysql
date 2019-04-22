@@ -320,7 +320,8 @@ export class Container {
       host: process.env.DATABASE_HOSTNAME || "localhost",
       user: process.env.DATABASE_USERNAME || "root",
       password: process.env.DATABASE_PASSWORD || null,
-      database: <string>temporaryDatabaseNameFactory(process.env.DATABASE_NAME),
+      // database: <string>temporaryDatabaseNameFactory(process.env.DATABASE_NAME),
+      database: <string>process.env.DATABASE_NAME,
       connectionLimit: 20,
       multipleStatements: true
     };
@@ -332,7 +333,7 @@ export class Container {
       process.env.DATABASE_NAME || "",
       this.databaseConfiguration
     );
-    offlineDataProcessor.createOfflineDatabase(cloneOriginalDb);
+    // offlineDataProcessor.createOfflineDatabase(cloneOriginalDb);
     return offlineDataProcessor;
   }
 

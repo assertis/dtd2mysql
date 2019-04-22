@@ -22,13 +22,13 @@ export class DownloadAndProcessCommand implements CLICommand {
     for (const filename of files) {
       try {
         await this.process.doImport(filename);
-        const viewsQuery = this.offlineDataProcessor.getViews();
-        if(viewsQuery) {
-          console.log(`[INFO] Applying views SQL to original table.`);
-          await this.db.query(
-            viewsQuery
-          );
-        }
+        // const viewsQuery = this.offlineDataProcessor.getViews();
+        // if(viewsQuery) {
+        //   console.log(`[INFO] Applying views SQL to original table.`);
+          // await this.db.query(
+          //   viewsQuery
+          // );
+        // }
       }
       catch (err) {
         console.error(err);
