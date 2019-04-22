@@ -77,7 +77,7 @@ export class OfflineDataProcessor {
     }
     catch (err) {
       console.log('[INFO] No need of copying database because it`s already exists. Performing update on ' + this.getTemporaryDatabaseName());
-      this.removeOutdatedOfflineDatabase();
+      // this.removeOutdatedOfflineDatabase();
       return; // Database already exists
     }
     const temporaryDatabase = this.getTemporaryDatabaseName(this.databaseName);
@@ -100,7 +100,7 @@ export class OfflineDataProcessor {
       });
     }
     // Remove old databases when original is cloned
-    this.removeOutdatedOfflineDatabase();
+    // this.removeOutdatedOfflineDatabase();
   }
 
   public getViews(dbWithData: string = this.getTemporaryDatabaseName()): string {
