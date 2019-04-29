@@ -157,7 +157,6 @@ export class OfflineDataProcessor {
 }
 
 export function temporaryDatabaseNameFactory(dbName: string, date: LocalDate = LocalDate.now()) {
-  date = date.plusDays(3);
   const dateStr: string = date.format(
     DateTimeFormatter.ofPattern('dd_MM')
   );
