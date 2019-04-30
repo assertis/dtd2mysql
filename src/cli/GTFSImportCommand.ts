@@ -32,9 +32,9 @@ export class GTFSImportCommand implements CLICommand {
     if (!viewsDatabase) {
       throw new Error('Cannot create views in correct because DATABASE_NAME is empty');
     }
-    // const ojpViewsSql = this.offlineDataProcessor.getViews();
-    // const sqlCommand = `mysql ${credentials} ${viewsDatabase} -e "${ojpViewsSql}"`;
-    // execSync(sqlCommand, {cwd: path});
+    const ojpViewsSql = this.offlineDataProcessor.getViews();
+    const sqlCommand = `mysql ${credentials} ${viewsDatabase} -e "${ojpViewsSql}"`;
+    execSync(sqlCommand, {cwd: path});
   }
 
 }
