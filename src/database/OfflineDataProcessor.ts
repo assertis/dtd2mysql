@@ -146,8 +146,9 @@ export class OfflineDataProcessor {
       this.getTemporaryDatabaseName()
     ];
     // Remove old databases
+    const regExp = new RegExp(/^[a-z]*_[0-9]{2}_[0-9]{2}$/);
     for (const dbName of result) {
-      if (dbName.indexOf(this.databaseName) !== -1 && !doNotRemove.includes(dbName)) {
+      if (regExp.test(dbName) && !doNotRemove.includes(dbName)) {
         const deleteCommand = `mysql ${this.credentials} -e "DROP DATABASE IF EXISTS ${dbName};"`;
         console.log(`[INFO] Removing outdated database ${dbName}`);
         this.commandExecutor(deleteCommand, this.execSyncOptions);
