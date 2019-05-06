@@ -14,5 +14,5 @@ export interface DatabaseConfiguration {
   connectionLimit: number,
   multipleStatements: boolean,
   promise?: any
-  performOnOriginalDb?: boolean
+  performWithoutViews?: boolean
 }

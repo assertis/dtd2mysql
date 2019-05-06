@@ -11,24 +11,24 @@ export class CleanupDatabasesCommand {
 
   }
 
-  public async run(argv: string[]): Promise<void> {
-    // Check if new views in original database works fine
-    const tables = this.offlineProcessor.getTablesList();
-
-    const checkAlltables = () => {
-      for (const table of tables) {
-        const sql = `SELECT * FROM ${table} LIMIT 1`;
-        try {
-          console.log(`[DEBUG] Run check query for table ${table}`);
-          this.databaseConnection.query(sql);
-        } catch (err) {
-          return false;
-        }
+  private checkAllTables(tables: string[]) {
+    for (const table of tables) {
+      const sql = `SELECT * FROM ${table} LIMIT 1`;
+      try {
+        console.log(`[DEBUG] Run check query for table ${table}`);
+        this.databaseConnection.query(sql);
+      } catch (err) {
+        console.log(`[ERROR] ${err.message}`);
+        return false;
       }
-      return true;
-    };
+    }
+    return true;
+  }
 
-    if (checkAlltables()) {
+  public async run(argv: string[]): Promise<void> {
+    // Check if new views in original database work fine
+    const tables = this.offlineProcessor.getTablesList();
+    if (this.checkAllTables(tables)) {
       console.log('[INFO] Views works fine. Removing outdated databases');
       this.offlineProcessor.removeOutdatedOfflineDatabase();
     }

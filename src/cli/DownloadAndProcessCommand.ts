@@ -27,7 +27,7 @@ export class DownloadAndProcessCommand implements CLICommand {
         console.error(err);
       }
     }
-    if(!this.offlineDataProcessor.databaseConfiguration.performOnOriginalDb) {
+    if(!this.offlineDataProcessor.databaseConfiguration.performWithoutViews) {
       const viewsQuery = this.offlineDataProcessor.getViews();
       if (viewsQuery) {
         console.log(`[INFO] Applying views SQL to original table.`);
