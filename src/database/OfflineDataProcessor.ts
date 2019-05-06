@@ -89,9 +89,14 @@ export class OfflineDataProcessor {
       console.log('[INFO] Copying database ' + originalDb + ' to ' + temporaryDatabase);
       // Create database and insert data
       const commands = [
+        // First dump only structure to make sure that you have all tables
+        `mysqldump -d ${this.credentials}  ${originalDb} > ${originalDb}_structure.sql`,
+        `mysql ${this.credentials} ${temporaryDatabase} < ${originalDb}_structure.sql`,
+
         `mysqldump ${dumpOnlyStructure} ${this.credentials}  ${originalDb} > ${originalDb}.sql`,
         `mysql ${this.credentials} ${temporaryDatabase} < ${originalDb}.sql`,
-        `rm -rf ${originalDb}.sql`
+        `rm -rf ${originalDb}.sql`,
+        `rm -rf ${originalDb}_structure.sql`
       ];
 
       commands.forEach(command => {
