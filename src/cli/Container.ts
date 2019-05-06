@@ -27,6 +27,7 @@ import {
   OfflineDataProcessor,
   temporaryDatabaseNameFactory
 } from "../database/OfflineDataProcessor";
+import {CleanupDatabasesCommand} from "./CleanupDatabasesCommand";
 
 export class Container {
 
@@ -77,10 +78,21 @@ export class Container {
         return this.getDownloadAndProcessIdmsFixedLinksCommand();
       case "--get-idms-group":
         return this.getDownloadAndProcessIdmsGroupCommand();
+      case "--clean-databases":
+        return this.getCleanupDatabasesCommand();
       default:
         return this.getShowHelpCommand();
     }
   }
+
+  @memoize
+  public async getCleanupDatabasesCommand(): Promise<CleanupDatabasesCommand> {
+    return new CleanupDatabasesCommand(
+        this.getDatabaseConnection(),
+        new OfflineDataProcessor(process.env.DATABASE_NAME || "", this.databaseConfiguration)
+    );
+  }
+
 
   @memoize
   public async getFaresImportCommand(): Promise<ImportFeedCommand> {

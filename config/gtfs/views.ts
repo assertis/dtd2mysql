@@ -1,4 +1,4 @@
-const TABLES = [
+export const GTFS_TABLES = [
   'agency',
   'calendar',
   'calendar_dates',
@@ -12,7 +12,7 @@ const TABLES = [
 ];
 
 export const ojpViews = 'START TRANSACTION;' +
-  TABLES.map(j => `
+  GTFS_TABLES.map(j => `
   DROP TABLE IF EXISTS {orgdb}.${j};
   CREATE OR REPLACE VIEW {orgdb}.${j} AS SELECT * FROM {dbname}.${j};
   `).join('') +

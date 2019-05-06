@@ -1,4 +1,4 @@
-const TABLES = [
+export const ROUTEING_TABLES = [
    'easement',
    'easement_detail',
    'easement_exception',
@@ -24,7 +24,7 @@ const TABLES = [
 ];
 
 export const routeingViews = 'START TRANSACTION;' +
-  TABLES.map(j => `
+  ROUTEING_TABLES.map(j => `
   DROP TABLE IF EXISTS {orgdb}.${j};
   CREATE OR REPLACE VIEW {orgdb}.${j} AS SELECT * FROM {dbname}.${j};
   `).join('') +

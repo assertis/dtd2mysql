@@ -1,4 +1,4 @@
-const TABLES = [
+export const TIMETABLE_TABLES = [
   'additional_fixed_link',
   'alias',
   'association',
@@ -16,7 +16,7 @@ const TABLES = [
 ];
 
 export const timetableViews = 'START TRANSACTION;' +
-  TABLES.map(j => `
+  TIMETABLE_TABLES.map(j => `
   DROP TABLE IF EXISTS {orgdb}.${j};
   CREATE OR REPLACE VIEW {orgdb}.${j} AS SELECT * FROM {dbname}.${j};
   `).join('') +

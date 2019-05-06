@@ -43,12 +43,14 @@ export class ImportFeedCommand implements CLICommand {
   public async run(argv: string[]): Promise<void> {
     try {
       await this.doImport(argv[3]);
-      const viewsQuery = this.offlineDataProcessor.getViews();
-      if(viewsQuery) {
-        console.log(`[INFO] Applying views SQL to original table.`);
-        await this.db.query(
-          viewsQuery
-        );
+      if(!this.offlineDataProcessor.databaseConfiguration.performWithoutViews) {
+        const viewsQuery = this.offlineDataProcessor.getViews();
+        if (viewsQuery) {
+          console.log(`[INFO] Applying views SQL to original table.`);
+          await this.db.query(
+              viewsQuery
+          );
+        }
       }
     }
     catch (err) {
