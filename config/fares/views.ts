@@ -1,4 +1,4 @@
-const TABLES = [
+export const FARES_TABLES = [
   'advance_ticket',
   'easement_detail',
   'easement_exception',
@@ -68,7 +68,7 @@ const TABLES = [
 
 export const faresView = 'START TRANSACTION;' +
   'CREATE TABLE IF NOT EXISTS nfm64(id INT(6));' + // nfm64 is creted in separate process
-  TABLES.map(j => `
+  FARES_TABLES.map(j => `
   DROP TABLE IF EXISTS {orgdb}.${j};
   CREATE OR REPLACE VIEW {orgdb}.${j} AS SELECT * FROM {dbname}.${j};
   `).join('') +

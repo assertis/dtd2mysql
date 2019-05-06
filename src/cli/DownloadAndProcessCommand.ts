@@ -27,12 +27,14 @@ export class DownloadAndProcessCommand implements CLICommand {
         console.error(err);
       }
     }
-    const viewsQuery = this.offlineDataProcessor.getViews();
-    if(viewsQuery) {
-      console.log(`[INFO] Applying views SQL to original table.`);
-      await this.db.query(
-        viewsQuery
-      );
+    if(!this.offlineDataProcessor.databaseConfiguration.performOnOriginalDb) {
+      const viewsQuery = this.offlineDataProcessor.getViews();
+      if (viewsQuery) {
+        console.log(`[INFO] Applying views SQL to original table.`);
+        await this.db.query(
+            viewsQuery
+        );
+      }
     }
     return this.process.end();
   }

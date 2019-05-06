@@ -1,11 +1,11 @@
 import {DateTimeFormatter, LocalDate} from "js-joda";
 import {DatabaseConfiguration} from "./DatabaseConnection";
 import {execSync} from "child_process";
-import {faresView} from "../../config/fares/views";
+import {FARES_TABLES, faresView} from "../../config/fares/views";
 import memoize = require("memoized-class-decorator");
-import {routeingViews} from "../../config/routeing/views";
-import {timetableViews} from "../../config/timetable/views";
-import {ojpViews} from "../../config/gtfs/views";
+import {ROUTEING_TABLES, routeingViews} from "../../config/routeing/views";
+import {TIMETABLE_TABLES, timetableViews} from "../../config/timetable/views";
+import {GTFS_TABLES, ojpViews} from "../../config/gtfs/views";
 
 
 export class OfflineDataProcessor {
@@ -24,7 +24,7 @@ export class OfflineDataProcessor {
    */
   public constructor(
     private readonly databaseName: string,
-    private readonly databaseConfiguration: DatabaseConfiguration,
+    public readonly databaseConfiguration: DatabaseConfiguration,
     private readonly commandExecutor: Function = execSync
   ) {
     this.credentials = `-h${this.databaseConfiguration.host} -u${this.databaseConfiguration.user} ${this.databaseConfiguration.password ? "-p" + this.databaseConfiguration.password : ""}`;
@@ -77,7 +77,6 @@ export class OfflineDataProcessor {
     }
     catch (err) {
       console.log('[INFO] No need of copying database because it`s already exists. Performing update on ' + this.getTemporaryDatabaseName());
-      this.removeOutdatedOfflineDatabase();
       return; // Database already exists
     }
     const temporaryDatabase = this.getTemporaryDatabaseName(this.databaseName);
@@ -99,8 +98,6 @@ export class OfflineDataProcessor {
         this.commandExecutor(`${command}`, this.execSyncOptions);
       });
     }
-    // Remove old databases when original is cloned
-    this.removeOutdatedOfflineDatabase();
   }
 
   public getViews(dbWithData: string = this.getTemporaryDatabaseName()): string {
@@ -125,12 +122,32 @@ export class OfflineDataProcessor {
       .replace(new RegExp(/{orgdb}/g), this.databaseName);
   }
 
-  private get dbNameFromYesterday(): string {
+  public getTablesList(): string[] {
+    switch(this.databaseName) {
+      case 'fares':
+        return FARES_TABLES;
+      case 'routeing':
+        return ROUTEING_TABLES;
+      case 'timetable':
+        return TIMETABLE_TABLES;
+      case 'ojp':
+        return GTFS_TABLES;
+    }
+    return [];
+  }
+
+  public get dbNameFromYesterday(): string {
     return this.getTemporaryDatabaseName(this.databaseName, LocalDate.now().minusDays(1));
   }
 
-  private get dbNameFromDayBeforeYesterday(): string {
+  public get dbNameFromDayBeforeYesterday(): string {
     return this.getTemporaryDatabaseName(this.databaseName, LocalDate.now().minusDays(2));
+  }
+
+  public removeDatabase(dbName: string) {
+    const deleteCommand = `mysql ${this.credentials} -e "DROP DATABASE IF EXISTS ${dbName};"`;
+    console.log(`[INFO] Removing outdated database ${dbName}`);
+    this.commandExecutor(deleteCommand, this.execSyncOptions);
   }
 
   public removeOutdatedOfflineDatabase() {
@@ -148,10 +165,8 @@ export class OfflineDataProcessor {
     // Remove old databases
     const regExp = new RegExp(/^[a-z]*_[0-9]{2}_[0-9]{2}$/);
     for (const dbName of result) {
-      if (regExp.test(dbName) && !doNotRemove.includes(dbName)) {
-        const deleteCommand = `mysql ${this.credentials} -e "DROP DATABASE IF EXISTS ${dbName};"`;
-        console.log(`[INFO] Removing outdated database ${dbName}`);
-        this.commandExecutor(deleteCommand, this.execSyncOptions);
+      if (dbName.includes(this.databaseName) && regExp.test(dbName) && !doNotRemove.includes(dbName)) {
+        this.removeDatabase(dbName);
       }
     }
   }
