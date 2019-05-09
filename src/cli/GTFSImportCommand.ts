@@ -1,15 +1,16 @@
 import {CLICommand} from "./CLICommand";
 import {execSync} from "child_process";
-import {DatabaseConfiguration} from "../database/DatabaseConnection";
+import {DatabaseConfiguration, DatabaseConnection} from "../database/DatabaseConnection";
 import {schema} from "../../config/gtfs/schema";
 import {importSQL} from "../../config/gtfs/import";
-import {OfflineDataProcessor} from "../database/OfflineDataProcessor";
+import {DataUpdateProcessor} from "../database/DataUpdateProcessor";
 
 export class GTFSImportCommand implements CLICommand {
 
   constructor(
     private readonly db: DatabaseConfiguration,
-    private readonly offlineDataProcessor: OfflineDataProcessor
+    private readonly dataUpdateProcessor: DataUpdateProcessor,
+    private readonly databaseConnection: DatabaseConnection
   ) {
   }
 
@@ -21,6 +22,8 @@ export class GTFSImportCommand implements CLICommand {
     const schemaEsc = schema.replace(/`/g, "\\`");
     const importSQLEsc = importSQL.replace(/`/g, "\\`");
 
+    // Do only the security backup. No need of prepariing _tmp tables because we create them in config/gtfs/import.ts
+    this.dataUpdateProcessor.cloneWorkingTables(DataUpdateProcessor.PREV_PREFIX);
     const credentials = `-h${this.db.host} -u${this.db.user} ${this.db.password ? "-p" + this.db.password : ""} `;
 
     const mysqlExec = `mysql --local-infile ${credentials} ${this.db.database} -e`;
@@ -28,15 +31,8 @@ export class GTFSImportCommand implements CLICommand {
     execSync(`${mysqlExec} "${schemaEsc}"`, {cwd: path});
     execSync(`${mysqlExec} "${importSQLEsc}"`, {cwd: path});
 
-    const viewsDatabase = process.env.DATABASE_NAME || "";
-    if (!viewsDatabase) {
-      throw new Error('Cannot create views in correct because DATABASE_NAME is empty');
-    }
-    if(!this.db.performWithoutViews) {
-      const ojpViewsSql = this.offlineDataProcessor.getViews();
-      const sqlCommand = `mysql ${credentials} ${viewsDatabase} -e "${ojpViewsSql}"`;
-      execSync(sqlCommand, {cwd: path});
-    }
+    this.dataUpdateProcessor.finishUpdate();
+
   }
 
 }

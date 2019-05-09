@@ -1,26 +1,26 @@
 
 export const importSQL = `
-TRUNCATE transfers;
-LOAD DATA LOCAL INFILE 'transfers.txt' INTO TABLE transfers FIELDS TERMINATED BY ',' IGNORE 1 LINES;
-TRUNCATE routes;
-LOAD DATA LOCAL INFILE 'routes.txt' INTO TABLE routes FIELDS TERMINATED BY ',' IGNORE 1 LINES;
-TRUNCATE agency;
-LOAD DATA LOCAL INFILE 'agency.txt' INTO TABLE agency FIELDS TERMINATED BY ',' IGNORE 1 LINES;
-TRUNCATE calendar;
-LOAD DATA LOCAL INFILE 'calendar.txt' INTO TABLE calendar FIELDS TERMINATED BY ',' IGNORE 1 LINES;
-TRUNCATE calendar_dates;
-LOAD DATA LOCAL INFILE 'calendar_dates.txt' INTO TABLE calendar_dates FIELDS TERMINATED BY ',' IGNORE 1 LINES;
-TRUNCATE trips;
-LOAD DATA LOCAL INFILE 'trips.txt' INTO TABLE trips FIELDS TERMINATED BY ',' IGNORE 1 LINES;
-TRUNCATE links;
-LOAD DATA LOCAL INFILE 'links.txt' INTO TABLE links FIELDS TERMINATED BY ',' IGNORE 1 LINES;
+CREATE TABLE tmp_transfers;
+LOAD DATA LOCAL INFILE 'transfers.txt' INTO TABLE tmp_transfers FIELDS TERMINATED BY ',' IGNORE 1 LINES;
+CREATE TABLE tmp_routes;
+LOAD DATA LOCAL INFILE 'routes.txt' INTO TABLE tmp_routes FIELDS TERMINATED BY ',' IGNORE 1 LINES;
+CREATE TABLE tmp_agency;
+LOAD DATA LOCAL INFILE 'agency.txt' INTO TABLE tmp_agency FIELDS TERMINATED BY ',' IGNORE 1 LINES;
+CREATE TABLE tmp_calendar;
+LOAD DATA LOCAL INFILE 'calendar.txt' INTO TABLE tmp_calendar FIELDS TERMINATED BY ',' IGNORE 1 LINES;
+CREATE TABLE tmp_calendar_dates;
+LOAD DATA LOCAL INFILE 'calendar_dates.txt' INTO TABLE tmp_calendar_dates FIELDS TERMINATED BY ',' IGNORE 1 LINES;
+CREATE TABLE tmp_trips;
+LOAD DATA LOCAL INFILE 'trips.txt' INTO TABLE tmp_trips FIELDS TERMINATED BY ',' IGNORE 1 LINES;
+CREATE TABLE tmp_links;
+LOAD DATA LOCAL INFILE 'links.txt' INTO TABLE tmp_links FIELDS TERMINATED BY ',' IGNORE 1 LINES;
 
-TRUNCATE stop_times;
-LOAD DATA LOCAL INFILE 'stop_times.txt' INTO TABLE stop_times FIELDS TERMINATED BY ',' IGNORE 1 LINES;
+CREATE TABLE tmp_stop_times;
+LOAD DATA LOCAL INFILE 'stop_times.txt' INTO TABLE tmp_stop_times FIELDS TERMINATED BY ',' IGNORE 1 LINES;
 
 
-TRUNCATE stops;
-LOAD DATA LOCAL INFILE 'stops.txt' INTO TABLE stops
+CREATE TABLE tmp_stops;
+LOAD DATA LOCAL INFILE 'stops.txt' INTO TABLE tmp_stops
 FIELDS TERMINATED BY ','
 IGNORE 1 LINES
 (stop_id, @stop_code, stop_name, stop_desc, stop_lat, stop_lon, zone_id, stop_url, location_type, parent_station, stop_timezone, wheelchair_boarding)

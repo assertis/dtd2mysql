@@ -66,10 +66,8 @@ export const FARES_TABLES = [
   'toc_specific_ticket',
 ];
 
-export const faresView = 'START TRANSACTION;' +
-  'CREATE TABLE IF NOT EXISTS nfm64(id INT(6));' + // nfm64 is creted in separate process
+export const faresView = 'CREATE TABLE IF NOT EXISTS nfm64(id INT(6));' + // nfm64 is creted in separate process
   FARES_TABLES.map(j => `
   DROP TABLE IF EXISTS {orgdb}.${j};
   CREATE OR REPLACE VIEW {orgdb}.${j} AS SELECT * FROM {dbname}.${j};
-  `).join('') +
-  ' COMMIT;';
+  `).join('');

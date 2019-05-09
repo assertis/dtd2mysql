@@ -15,12 +15,10 @@ export const TIMETABLE_TABLES = [
   'z_stop_time',
 ];
 
-export const timetableViews = 'START TRANSACTION;' +
-  TIMETABLE_TABLES.map(j => `
+export const timetableViews = TIMETABLE_TABLES.map(j => `
   DROP TABLE IF EXISTS {orgdb}.${j};
   CREATE OR REPLACE VIEW {orgdb}.${j} AS SELECT * FROM {dbname}.${j};
-  `).join('') +
-  ' COMMIT;';
+  `).join('');
 
 
 

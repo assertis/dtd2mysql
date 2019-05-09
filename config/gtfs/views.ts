@@ -11,13 +11,11 @@ export const GTFS_TABLES = [
   'trips'
 ];
 
-export const ojpViews = 'START TRANSACTION;' +
-  GTFS_TABLES.map(j => `
+export const ojpViews = GTFS_TABLES.map(j => `
   DROP TABLE IF EXISTS {orgdb}.${j};
   CREATE OR REPLACE VIEW {orgdb}.${j} AS SELECT * FROM {dbname}.${j};
   `).join('') +
-  'CREATE OR REPLACE VIEW {orgdb}.transfer_patterns AS SELECT * FROM transfer_patterns.transfer_patterns;'
-  ' COMMIT;';
+  'CREATE OR REPLACE VIEW {orgdb}.transfer_patterns AS SELECT * FROM transfer_patterns.transfer_patterns;';
 
 
 

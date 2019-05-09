@@ -2,6 +2,7 @@ import {OfflineDataProcessor} from "../../src/database/OfflineDataProcessor";
 import * as chai from "chai";
 import {DateTimeFormatter, LocalDate} from "js-joda";
 import {ExecSyncOptions} from "child_process";
+import {MockDatabaseConnection} from "./MySQLSchema.spec";
 
 describe("OfflineDataProcessor", () => {
 
@@ -17,7 +18,8 @@ describe("OfflineDataProcessor", () => {
   it("Temporary database name creator", () => {
     const offlineDataProcessor = new OfflineDataProcessor(
       'test',
-      databaseConfiguration
+      databaseConfiguration,
+      new MockDatabaseConnection()
     );
 
     const temporarydatabaseName = offlineDataProcessor.getTemporaryDatabaseName(
@@ -37,7 +39,8 @@ describe("OfflineDataProcessor", () => {
     const offlineDataProcessor = new OfflineDataProcessor(
       'test',
       databaseConfiguration,
-      executor
+      new MockDatabaseConnection(),
+    executor
     );
     // Will return original database name
     chai.expect(offlineDataProcessor.getOriginalDatabase()).to.equal('test_01_02');
@@ -57,6 +60,7 @@ describe("OfflineDataProcessor", () => {
     const offlineDataProcessor = new OfflineDataProcessor(
       'test',
       databaseConfiguration,
+      new MockDatabaseConnection(),
       executor
     );
     chai.expect(offlineDataProcessor.getOriginalDatabase()).to.equal(dbFromYesterday);
@@ -81,6 +85,7 @@ describe("OfflineDataProcessor", () => {
     const offlineDataProcessor = new OfflineDataProcessor(
       'test',
       databaseConfiguration,
+      new MockDatabaseConnection(),
       executor
     );
     chai.expect(offlineDataProcessor.getOriginalDatabase()).to.equal(dbFromYesterday);
@@ -90,7 +95,8 @@ describe("OfflineDataProcessor", () => {
     const databaseName = 'fares';
     const offlineDataProcessor = new OfflineDataProcessor(
       databaseName,
-      databaseConfiguration
+      databaseConfiguration,
+      new MockDatabaseConnection()
     );
 
     const viewsSql = offlineDataProcessor.getViews();

@@ -23,12 +23,10 @@ export const ROUTEING_TABLES = [
    'station_routeing_point'
 ];
 
-export const routeingViews = 'START TRANSACTION;' +
-  ROUTEING_TABLES.map(j => `
+export const routeingViews = ROUTEING_TABLES.map(j => `
   DROP TABLE IF EXISTS {orgdb}.${j};
   CREATE OR REPLACE VIEW {orgdb}.${j} AS SELECT * FROM {dbname}.${j};
-  `).join('') +
-  'COMMIT;';
+  `).join('');
 
 
 

@@ -1,5 +1,6 @@
 import {DatabaseConnection} from "./DatabaseConnection";
 import {ParsedRecord, RecordAction} from "../feed/record/Record";
+import {DataUpdateProcessor} from "./DataUpdateProcessor";
 
 /**
  * Stateful class that provides access to a MySQL table and acts as buffer for inserts.
@@ -14,9 +15,11 @@ export class MySQLTable {
 
   constructor(
     private readonly db: DatabaseConnection,
-    private readonly tableName: string,
+    private tableName: string,
     private readonly flushLimit: number = 5000
-  ) {}
+  ) {
+    this.tableName = DataUpdateProcessor.TMP_PREFIX + this.tableName;
+  }
 
   /**
    * Insert the given row to the table

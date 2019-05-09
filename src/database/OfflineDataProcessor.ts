@@ -1,11 +1,12 @@
 import {DateTimeFormatter, LocalDate} from "js-joda";
-import {DatabaseConfiguration} from "./DatabaseConnection";
+import {DatabaseConfiguration, DatabaseConnection} from "./DatabaseConnection";
 import {execSync} from "child_process";
 import {FARES_TABLES, faresView} from "../../config/fares/views";
 import memoize = require("memoized-class-decorator");
 import {ROUTEING_TABLES, routeingViews} from "../../config/routeing/views";
 import {TIMETABLE_TABLES, timetableViews} from "../../config/timetable/views";
 import {GTFS_TABLES, ojpViews} from "../../config/gtfs/views";
+import {bool} from "aws-sdk/clients/signer";
 
 
 export class OfflineDataProcessor {
@@ -25,6 +26,7 @@ export class OfflineDataProcessor {
   public constructor(
     private readonly databaseName: string,
     public readonly databaseConfiguration: DatabaseConfiguration,
+    private readonly db: DatabaseConnection,
     private readonly commandExecutor: Function = execSync
   ) {
     this.credentials = `-h${this.databaseConfiguration.host} -u${this.databaseConfiguration.user} ${this.databaseConfiguration.password ? "-p" + this.databaseConfiguration.password : ""}`;
@@ -103,6 +105,26 @@ export class OfflineDataProcessor {
         this.commandExecutor(`${command}`, this.execSyncOptions);
       });
     }
+  }
+
+  public async applyViews(dbWithData: string = this.getTemporaryDatabaseName()): Promise<boolean> {
+    if(this.databaseConfiguration.performWithoutViews) {
+      return true;
+    }
+    const views = this.getViews(dbWithData);
+    try {
+      await this.db.query("SET AUTOCOMMIT = 0");
+      await this.db.query("BEGIN WORK");
+      await this.db.query(
+        views
+      );
+      await this.db.query("COMMIT");
+      console.log(`[INFO] Views applied frin ${dbWithData} to ${this.databaseName}`);
+      return true;
+    }catch(err) {
+      await this.db.query("ROLLBACK");
+    }
+    return false;
   }
 
   public getViews(dbWithData: string = this.getTemporaryDatabaseName()): string {

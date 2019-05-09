@@ -13,9 +13,9 @@
     "watch-test": "mocha -w --require ts-node/register 'test/**/*.spec.ts'",
     "start": "ts-node ./src/index.ts",
     "prepublishOnly": "tsc -p ./ --outDir dist/ && cp -r config/timetable/data dist/config/timetable/data",
-    "gtfs": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --gtfs",
-    "gtfs-import": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --gtfs-import",
-    "gtfs-zip": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --gtfs-zip",
+    "gtfs": "NODE_OPTIONS='--max-old-space-size=4500' ts-node ./src/index.ts --gtfs",
+    "gtfs-import": "NODE_OPTIONS='--max-old-space-size=4500' ts-node ./src/index.ts --gtfs-import",
+    "gtfs-zip": "NODE_OPTIONS='--max-old-space-size=4500' ts-node ./src/index.ts --gtfs-zip",
     "dataVersion": "ts-node ./src/dataVersion.ts",
     "dev": "ts-node ./src/dev.ts"
   },

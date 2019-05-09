@@ -88,6 +88,18 @@ class MockDatabaseConnection implements DatabaseConnection {
     return this;
   }
 
+  async beginTransaction(): Promise<void> {
+
+  }
+
+  async commit(): Promise<void> {
+
+  }
+
+  async rollback(): Promise<void> {
+
+  }
+
   async release(): Promise<void> {
 
   }

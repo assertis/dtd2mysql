@@ -3,6 +3,7 @@ import {CLICommand} from "./CLICommand";
 import {ImportFeedCommand} from "./ImportFeedCommand";
 import {DatabaseConnection} from "../database/DatabaseConnection";
 import {OfflineDataProcessor} from "../database/OfflineDataProcessor";
+import {DataUpdateProcessor} from "../database/DataUpdateProcessor";
 
 export class DownloadAndProcessCommand implements CLICommand {
 
@@ -10,7 +11,7 @@ export class DownloadAndProcessCommand implements CLICommand {
     private readonly download: FileProvider,
     private readonly process: ImportFeedCommand,
     protected readonly db: DatabaseConnection,
-    protected readonly offlineDataProcessor: OfflineDataProcessor
+    protected readonly dataUpdateProcessor: DataUpdateProcessor
   ) {}
 
   /**
@@ -19,6 +20,7 @@ export class DownloadAndProcessCommand implements CLICommand {
   public async run(argv: string[]): Promise<any> {
     const files = await this.download.run([]);
 
+    await this.dataUpdateProcessor.prepareUpdate();
     for (const filename of files) {
       try {
         await this.process.doImport(filename);
@@ -27,15 +29,7 @@ export class DownloadAndProcessCommand implements CLICommand {
         console.error(err);
       }
     }
-    if(!this.offlineDataProcessor.databaseConfiguration.performWithoutViews) {
-      const viewsQuery = this.offlineDataProcessor.getViews();
-      if (viewsQuery) {
-        console.log(`[INFO] Applying views SQL to original table.`);
-        await this.db.query(
-            viewsQuery
-        );
-      }
-    }
+    await this.dataUpdateProcessor.finishUpdate();
     return this.process.end();
   }
 

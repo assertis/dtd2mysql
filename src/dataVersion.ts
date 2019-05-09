@@ -28,18 +28,12 @@ const linkViewsToOtherDatabase = async () => {
   console.info('[INFO] Database with data => ', databaseWithData);
   const offlineDataProcessor = new OfflineDataProcessor(
       databaseWithViews,
-      container.databaseConfiguration
+      container.databaseConfiguration,
+    container.getDatabaseConnection()
   );
-  const viewsSql = offlineDataProcessor.getViews(databaseWithData);
-  console.info('[INFO] SQL Query => ', viewsSql);
+  offlineDataProcessor.applyViews(databaseWithData);
 
   // Execute the query
-  try {
-    await container.getDatabaseConnection().query(viewsSql);
-    console.info('[INFO] Query finished.')
-  } catch (err) {
-    console.error(err);
-  }
   process.exit(0);
 };
 

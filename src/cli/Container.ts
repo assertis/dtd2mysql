@@ -28,6 +28,11 @@ import {
   temporaryDatabaseNameFactory
 } from "../database/OfflineDataProcessor";
 import {CleanupDatabasesCommand} from "./CleanupDatabasesCommand";
+import {FARES_TABLES} from "../../config/fares/views";
+import {GTFS_TABLES} from "../../config/gtfs/views";
+import {TIMETABLE_TABLES} from "../../config/timetable/views";
+import {ROUTEING_TABLES} from "../../config/routeing/views";
+import {DataUpdateProcessor} from "../database/DataUpdateProcessor";
 
 export class Container {
 
@@ -89,7 +94,7 @@ export class Container {
   public async getCleanupDatabasesCommand(): Promise<CleanupDatabasesCommand> {
     return new CleanupDatabasesCommand(
         this.getDatabaseConnection(),
-        new OfflineDataProcessor(process.env.DATABASE_NAME || "", this.databaseConfiguration)
+        new OfflineDataProcessor(process.env.DATABASE_NAME || "", this.databaseConfiguration, this.getDatabaseConnection())
     );
   }
 
@@ -100,7 +105,7 @@ export class Container {
       await this.getDatabaseConnection(),
       config.fares,
       "/tmp/dtd/fares/",
-      this.getOfflineDataProcessor()
+      this.getDataUpdateProcessor()
     );
   }
 
@@ -110,7 +115,7 @@ export class Container {
       await this.getDatabaseConnection(),
       config.routeing,
       "/tmp/dtd/routeing/",
-      this.getOfflineDataProcessor()
+      this.getDataUpdateProcessor()
     );
   }
 
@@ -120,7 +125,7 @@ export class Container {
       await this.getDatabaseConnection(),
       config.timetable,
       "/tmp/dtd/timetable/",
-      this.getOfflineDataProcessor()
+      this.getDataUpdateProcessor()
     );
   }
 
@@ -130,7 +135,7 @@ export class Container {
       await this.getDatabaseConnection(),
       config.nfm64,
       "/tmp/dtd/nfm64/",
-      this.getOfflineDataProcessor()
+      this.getDataUpdateProcessor()
     );
   }
 
@@ -140,7 +145,7 @@ export class Container {
       await this.getDatabaseConnection(),
       config.idms,
       "/tmp/idms/",
-      this.getOfflineDataProcessor()
+      this.getDataUpdateProcessor()
     );
   }
 
@@ -150,7 +155,7 @@ export class Container {
       await this.getDatabaseConnection(),
       config.idms,
       "/tmp/idms/",
-      this.getOfflineDataProcessor()
+      this.getDataUpdateProcessor()
     );
   }
 
@@ -166,7 +171,11 @@ export class Container {
 
   @memoize
   public getImportGTFSCommand(): Promise<GTFSImportCommand> {
-    return Promise.resolve(new GTFSImportCommand(this.databaseConfiguration, this.getOfflineDataProcessor(false)));
+    return Promise.resolve(new GTFSImportCommand(
+      this.databaseConfiguration,
+      this.getDataUpdateProcessor(),
+      this.getDatabaseConnection()
+    ));
   }
 
   @memoize
@@ -250,49 +259,42 @@ export class Container {
 
   @memoize
   private async getDownloadAndProcessCommand(path: string, importFeedProcess: Promise<ImportFeedCommand>): Promise<DownloadAndProcessCommand> {
-    const offlineDataProcessor = this.getOfflineDataProcessor();
-
     return new DownloadAndProcessCommand(
       await this.getDownloadCommand(path),
       await importFeedProcess,
       await this.getDatabaseConnection(),
-      offlineDataProcessor,
+      this.getDataUpdateProcessor(),
     );
   }
 
   @memoize
   private async getDownloadAndProcessNFM64Command(): Promise<DownloadAndProcessCommand> {
-    const offlineDataProcessor = this.getOfflineDataProcessor();
-
     return new DownloadAndProcessCommand(
       await this.getDownloadNFM64Command(),
       await this.getNFM64ImportCommand(),
       await this.getDatabaseConnection(),
-      offlineDataProcessor,
+      this.getDataUpdateProcessor(),
     );
   }
 
   @memoize
   private async getDownloadAndProcessIdmsFixedLinksCommand(): Promise<DownloadAndProcessCommand> {
-    const offlineDataProcessor = this.getOfflineDataProcessor();
-
     return new DownloadAndProcessCommand(
       await this.getDownloadIdmsFixedLinksCommand(),
       await this.getImportIdmsFixedLinksCommand(),
       await this.getDatabaseConnection(),
-      offlineDataProcessor
+      this.getDataUpdateProcessor()
+
     );
   }
 
   @memoize
   private async getDownloadAndProcessIdmsGroupCommand(): Promise<DownloadAndProcessCommand> {
-    const offlineDataProcessor = this.getOfflineDataProcessor();
-
     return new DownloadAndProcessCommand(
       await this.getDownloadIdmsGroupCommand(),
       await this.getImportIdmsGroupCommand(),
       await this.getDatabaseConnection(),
-      offlineDataProcessor
+      this.getDataUpdateProcessor()
     );
   }
 
@@ -330,18 +332,41 @@ export class Container {
       host: process.env.DATABASE_HOSTNAME || "localhost",
       user: process.env.DATABASE_USERNAME || "root",
       password: process.env.DATABASE_PASSWORD || null,
-      database: <string>temporaryDatabaseNameFactory(process.env.DATABASE_NAME),
-      // database: <string>process.env.DATABASE_NAME,
+      database: <string>process.env.DATABASE_NAME,
       connectionLimit: 20,
       multipleStatements: true
     };
   }
 
   @memoize
+  public getDataUpdateProcessor(): DataUpdateProcessor {
+    let tables: string[] = [];
+    switch(this.databaseConfiguration.database) {
+      case 'fares':
+        tables = FARES_TABLES;
+        break;
+      case 'ojp':
+        tables = GTFS_TABLES;
+        break;
+      case 'timetable':
+        tables = TIMETABLE_TABLES;
+        break;
+      case 'routeing':
+        tables = ROUTEING_TABLES;
+        break;
+    }
+    return new DataUpdateProcessor(
+      this.getDatabaseConnection(),
+      tables
+    );
+  }
+
+  @memoize
   public getOfflineDataProcessor(cloneOriginalDb: boolean = true): OfflineDataProcessor {
     const offlineDataProcessor = new OfflineDataProcessor(
       process.env.DATABASE_NAME || "",
-      this.databaseConfiguration
+      this.databaseConfiguration,
+      this.getDatabaseConnection()
     );
     offlineDataProcessor.createOfflineDatabase(cloneOriginalDb);
     return offlineDataProcessor;
