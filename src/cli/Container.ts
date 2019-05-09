@@ -99,8 +99,7 @@ export class Container {
     return new ImportFeedCommand(
       await this.getDatabaseConnection(),
       config.fares,
-      "/tmp/dtd/fares/",
-      this.getOfflineDataProcessor()
+      "/tmp/dtd/fares/"
     );
   }
 
@@ -109,8 +108,7 @@ export class Container {
     return new ImportFeedCommand(
       await this.getDatabaseConnection(),
       config.routeing,
-      "/tmp/dtd/routeing/",
-      this.getOfflineDataProcessor()
+      "/tmp/dtd/routeing/"
     );
   }
 
@@ -119,8 +117,7 @@ export class Container {
     return new ImportFeedCommand(
       await this.getDatabaseConnection(),
       config.timetable,
-      "/tmp/dtd/timetable/",
-      this.getOfflineDataProcessor()
+      "/tmp/dtd/timetable/"
     );
   }
 
@@ -129,8 +126,7 @@ export class Container {
     return new ImportFeedCommand(
       await this.getDatabaseConnection(),
       config.nfm64,
-      "/tmp/dtd/nfm64/",
-      this.getOfflineDataProcessor()
+      "/tmp/dtd/nfm64/"
     );
   }
 
@@ -139,8 +135,7 @@ export class Container {
     return new ImportIdmsFixedLinksCommand(
       await this.getDatabaseConnection(),
       config.idms,
-      "/tmp/idms/",
-      this.getOfflineDataProcessor()
+      "/tmp/idms/"
     );
   }
 
@@ -149,8 +144,7 @@ export class Container {
     return new ImportIdmsGroupCommand(
       await this.getDatabaseConnection(),
       config.idms,
-      "/tmp/idms/",
-      this.getOfflineDataProcessor()
+      "/tmp/idms/"
     );
   }
 
@@ -166,7 +160,7 @@ export class Container {
 
   @memoize
   public getImportGTFSCommand(): Promise<GTFSImportCommand> {
-    return Promise.resolve(new GTFSImportCommand(this.databaseConfiguration, this.getOfflineDataProcessor(false)));
+    return Promise.resolve(new GTFSImportCommand(this.databaseConfiguration));
   }
 
   @memoize
@@ -250,49 +244,37 @@ export class Container {
 
   @memoize
   private async getDownloadAndProcessCommand(path: string, importFeedProcess: Promise<ImportFeedCommand>): Promise<DownloadAndProcessCommand> {
-    const offlineDataProcessor = this.getOfflineDataProcessor();
-
     return new DownloadAndProcessCommand(
       await this.getDownloadCommand(path),
       await importFeedProcess,
-      await this.getDatabaseConnection(),
-      offlineDataProcessor,
+      await this.getDatabaseConnection()
     );
   }
 
   @memoize
   private async getDownloadAndProcessNFM64Command(): Promise<DownloadAndProcessCommand> {
-    const offlineDataProcessor = this.getOfflineDataProcessor();
-
     return new DownloadAndProcessCommand(
       await this.getDownloadNFM64Command(),
       await this.getNFM64ImportCommand(),
-      await this.getDatabaseConnection(),
-      offlineDataProcessor,
+      await this.getDatabaseConnection()
     );
   }
 
   @memoize
   private async getDownloadAndProcessIdmsFixedLinksCommand(): Promise<DownloadAndProcessCommand> {
-    const offlineDataProcessor = this.getOfflineDataProcessor();
-
     return new DownloadAndProcessCommand(
       await this.getDownloadIdmsFixedLinksCommand(),
       await this.getImportIdmsFixedLinksCommand(),
-      await this.getDatabaseConnection(),
-      offlineDataProcessor
+      await this.getDatabaseConnection()
     );
   }
 
   @memoize
   private async getDownloadAndProcessIdmsGroupCommand(): Promise<DownloadAndProcessCommand> {
-    const offlineDataProcessor = this.getOfflineDataProcessor();
-
     return new DownloadAndProcessCommand(
       await this.getDownloadIdmsGroupCommand(),
       await this.getImportIdmsGroupCommand(),
-      await this.getDatabaseConnection(),
-      offlineDataProcessor
+      await this.getDatabaseConnection()
     );
   }
 
@@ -330,21 +312,10 @@ export class Container {
       host: process.env.DATABASE_HOSTNAME || "localhost",
       user: process.env.DATABASE_USERNAME || "root",
       password: process.env.DATABASE_PASSWORD || null,
-      database: <string>temporaryDatabaseNameFactory(process.env.DATABASE_NAME),
-      // database: <string>process.env.DATABASE_NAME,
+      database: <string>process.env.DATABASE_NAME,
       connectionLimit: 20,
       multipleStatements: true
     };
-  }
-
-  @memoize
-  public getOfflineDataProcessor(cloneOriginalDb: boolean = true): OfflineDataProcessor {
-    const offlineDataProcessor = new OfflineDataProcessor(
-      process.env.DATABASE_NAME || "",
-      this.databaseConfiguration
-    );
-    offlineDataProcessor.createOfflineDatabase(cloneOriginalDb);
-    return offlineDataProcessor;
   }
 
 }

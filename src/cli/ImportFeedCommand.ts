@@ -13,8 +13,6 @@ import {RecordWithManualIdentifier} from "../feed/record/FixedWidthRecord";
 import {MySQLStream, TableIndex} from "../database/MySQLStream";
 import byline = require("byline");
 import streamToPromise = require("stream-to-promise");
-import {faresView} from "../../config/fares/views";
-import {OfflineDataProcessor} from "../database/OfflineDataProcessor";
 
 const getExt = filename => path.extname(filename).slice(1).toUpperCase();
 const readFile = filename => byline.createStream(fs.createReadStream(filename, "utf8"));
@@ -29,8 +27,7 @@ export class ImportFeedCommand implements CLICommand {
   constructor(
     protected readonly db: DatabaseConnection,
     protected readonly files: FeedConfig,
-    protected readonly tmpFolder: string,
-    protected readonly offlineDataProcessor: OfflineDataProcessor
+    protected readonly tmpFolder: string
   ) { }
 
   protected get fileArray(): FeedFile[] {
@@ -43,15 +40,6 @@ export class ImportFeedCommand implements CLICommand {
   public async run(argv: string[]): Promise<void> {
     try {
       await this.doImport(argv[3]);
-      if(!this.offlineDataProcessor.databaseConfiguration.performWithoutViews) {
-        const viewsQuery = this.offlineDataProcessor.getViews();
-        if (viewsQuery) {
-          console.log(`[INFO] Applying views SQL to original table.`);
-          await this.db.query(
-              viewsQuery
-          );
-        }
-      }
     }
     catch (err) {
       console.error(err);
