@@ -2,15 +2,13 @@
 import {CLICommand} from "./CLICommand";
 import {ImportFeedCommand} from "./ImportFeedCommand";
 import {DatabaseConnection} from "../database/DatabaseConnection";
-import {OfflineDataProcessor} from "../database/OfflineDataProcessor";
 
 export class DownloadAndProcessCommand implements CLICommand {
 
   constructor(
     private readonly download: FileProvider,
     private readonly process: ImportFeedCommand,
-    protected readonly db: DatabaseConnection,
-    protected readonly offlineDataProcessor: OfflineDataProcessor
+    protected readonly db: DatabaseConnection
   ) {}
 
   /**
@@ -27,15 +25,7 @@ export class DownloadAndProcessCommand implements CLICommand {
         console.error(err);
       }
     }
-    if(!this.offlineDataProcessor.databaseConfiguration.performWithoutViews) {
-      const viewsQuery = this.offlineDataProcessor.getViews();
-      if (viewsQuery) {
-        console.log(`[INFO] Applying views SQL to original table.`);
-        await this.db.query(
-            viewsQuery
-        );
-      }
-    }
+
     return this.process.end();
   }
 
