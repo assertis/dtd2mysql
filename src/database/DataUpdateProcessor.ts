@@ -42,6 +42,8 @@ export class DataUpdateProcessor {
       // await (await this.db.getConnection()).release();
       console.log(`[ERROR] ${err.toString()}`);
       // process.exit(500);
+    } finally {
+      await (await this.db.getConnection()).release();
     }
   }
 
@@ -50,11 +52,19 @@ export class DataUpdateProcessor {
       for (const table of this.tables) {
         // await (await this.db.getConnection()).beginTransaction();
         const tmpTable = prefix + table;
-        console.log(`[INFO] Cloned ${table} TO ${tmpTable} START`);
+        console.log(`[INFO] Clone ${table} TO ${tmpTable} START`);
         // Drop old table and clone working table
         await this.db.query(
             `DROP TABLE IF EXISTS ${tmpTable}; CREATE TABLE ${tmpTable} AS SELECT * FROM ${table}`
         );
+        try {
+          await this.db.query(
+              `ALTER TABLE ${tmpTable} MODIFY COLUMN IF EXISTS id INT(11) unsigned AUTO_INCREMENT PRIMARY KEY`
+          );
+          console.log(`[INFO] Alter id column in ${tmpTable}`);
+        }catch(err) {
+          // DO nothing
+        }
         // await (await this.db.getConnection()).commit();
         // await (await this.db.getConnection()).release();
         console.log(`[INFO] Cloned ${table} TO ${tmpTable} FINISHED`);
@@ -64,6 +74,8 @@ export class DataUpdateProcessor {
       // await (await this.db.getConnection()).release();
       console.log(`[ERROR] ${err.toString()}`);
       // process.exit(500);
+    } finally {
+      await (await this.db.getConnection()).release();
     }
   }
 

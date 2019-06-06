@@ -30,9 +30,7 @@ export class GTFSImportCommand implements CLICommand {
 
     execSync(`${mysqlExec} "${schemaEsc}"`, {cwd: path});
     execSync(`${mysqlExec} "${importSQLEsc}"`, {cwd: path});
-
-    this.dataUpdateProcessor.finishUpdate();
-
+    await this.dataUpdateProcessor.finishUpdate();
   }
 
 }

@@ -14,7 +14,6 @@ import {MySQLStream, TableIndex} from "../database/MySQLStream";
 import byline = require("byline");
 import streamToPromise = require("stream-to-promise");
 import {faresView} from "../../config/fares/views";
-import {OfflineDataProcessor} from "../database/OfflineDataProcessor";
 import {DataUpdateProcessor} from "../database/DataUpdateProcessor";
 
 const getExt = filename => path.extname(filename).slice(1).toUpperCase();

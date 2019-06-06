@@ -284,7 +284,6 @@ export class Container {
       await this.getImportIdmsFixedLinksCommand(),
       await this.getDatabaseConnection(),
       this.getDataUpdateProcessor()
-
     );
   }
 

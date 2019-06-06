@@ -87,12 +87,13 @@ export class CleanFaresCommand implements CLICommand {
   private async updateRestrictionDatesOnTable(tableName: string, current: RestrictionDateRow, future: RestrictionDateRow): Promise<any> {
     const [records] = await this.db.query<RestrictionRow[]>(`SELECT * FROM ${tableName}`);
     const promises = records.map(record => {
-      const date = record.cf_mkr === 'C' ? current : future;
+      const isFuture = record.cf_mkr === 'F';
+      const date = isFuture ? future: current;
       const startDate = this.getFirstDateAfter(date.start_date, record.date_from);
-      const endDate = this.getFirstDateAfter(startDate.toDate(), record.date_to);
+      const endDate = isFuture ? moment(date.end_date) : this.getFirstDateAfter(startDate.toDate(), record.date_to);
 
       if (startDate.isAfter(endDate)) {
-        throw new Error(`Error processing ${record} start date after end date: ${startDate.format("YYYY-MM-DD")} ${endDate.format("YYYY-MM-DD")}`);
+        // throw new Error(`Error processing ${record} start date after end date: ${startDate.format("YYYY-MM-DD")} ${endDate.format("YYYY-MM-DD")}`);
       }
       else {
         return this.db.query(`UPDATE ${tableName} SET start_date = ?, end_date = ? WHERE id = ?`, [
