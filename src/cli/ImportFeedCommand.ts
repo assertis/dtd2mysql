@@ -13,6 +13,7 @@ import {RecordWithManualIdentifier} from "../feed/record/FixedWidthRecord";
 import {MySQLStream, TableIndex} from "../database/MySQLStream";
 import byline = require("byline");
 import streamToPromise = require("stream-to-promise");
+import { MySQLTmpTable } from '../database/MySQLTmpTable';
 
 const getExt = filename => path.extname(filename).slice(1).toUpperCase();
 const readFile = filename => byline.createStream(fs.createReadStream(filename, "utf8"));
@@ -160,7 +161,7 @@ export class ImportFeedCommand implements CLICommand {
       if (!this.index[record.name]) {
         const db = record.orderedInserts ? await this.db.getConnection() : this.db;
 
-        this.index[record.name] = new MySQLTable(db, record.name);
+        this.index[record.name] = new MySQLTmpTable(db, record.name);
       }
     }
 

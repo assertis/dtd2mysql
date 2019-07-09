@@ -6,16 +6,16 @@ import {ParsedRecord, RecordAction} from "../feed/record/Record";
  */
 export class MySQLTable {
 
-  private readonly buffer = {
+  protected readonly buffer = {
     [RecordAction.Insert]: [] as ParsedRecord[],
     [RecordAction.Update]: [] as ParsedRecord[],
     [RecordAction.Delete]: [] as ParsedRecord[],
   };
 
   constructor(
-    private readonly db: DatabaseConnection,
-    private readonly tableName: string,
-    private readonly flushLimit: number = 5000
+    protected readonly db: DatabaseConnection,
+    protected readonly tableName: string,
+    protected readonly flushLimit: number = 5000
   ) {}
 
   /**
@@ -32,7 +32,7 @@ export class MySQLTable {
   /**
    * Flush the table
    */
-  private async flush(type: RecordAction): Promise<void> {
+  protected async flush(type: RecordAction): Promise<void> {
     const rows = this.buffer[type];
 
     if (rows.length > 0) {
@@ -60,7 +60,7 @@ export class MySQLTable {
   /**
    * Query with retry. Sometimes locking errors occur
    */
-  private async queryWithRetry(type: RecordAction, rows: ParsedRecord[], numRetries: number = 3): Promise<void> {
+  protected async queryWithRetry(type: RecordAction, rows: ParsedRecord[], numRetries: number = 3): Promise<void> {
     try {
       await this.query(type, rows);
     }
@@ -74,7 +74,7 @@ export class MySQLTable {
     }
   }
 
-  private query(type: RecordAction, rows: ParsedRecord[]): Promise<void> {
+  protected query(type: RecordAction, rows: ParsedRecord[]): Promise<void> {
     const rowValues = rows.map(r => Object.values(r.values));
 
     switch (type) {
@@ -89,7 +89,7 @@ export class MySQLTable {
     }
   }
 
-  private getDeleteSQL(rows: ParsedRecord[]): string {
+  protected getDeleteSQL(rows: ParsedRecord[]): string {
     return rows.map(row => Object.keys(row.values).map(k => `\`${k}\` = ?`).join(" AND ")).join(") OR (");
   }
 }
