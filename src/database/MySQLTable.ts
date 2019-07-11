@@ -1,10 +1,11 @@
 import {DatabaseConnection} from "./DatabaseConnection";
 import {ParsedRecord, RecordAction} from "../feed/record/Record";
+import { Table } from './Table';
 
 /**
  * Stateful class that provides access to a MySQL table and acts as buffer for inserts.
  */
-export class MySQLTable {
+export class MySQLTable implements Table{
 
   protected readonly buffer = {
     [RecordAction.Insert]: [] as ParsedRecord[],
@@ -17,6 +18,20 @@ export class MySQLTable {
     protected readonly tableName: string,
     protected readonly flushLimit: number = 5000
   ) {}
+
+  /**
+   * This implementation persist records on the fly in apply() method.
+   */
+  public async persist(): Promise<void> {
+    return;
+  }
+
+  /**
+   * This implementation do not support reverting!!
+   */
+  public async revert(): Promise<void> {
+    throw new Error("MySQLTable do not support reverting!");
+  }
 
   /**
    * Insert the given row to the table
@@ -92,5 +107,6 @@ export class MySQLTable {
   protected getDeleteSQL(rows: ParsedRecord[]): string {
     return rows.map(row => Object.keys(row.values).map(k => `\`${k}\` = ?`).join(" AND ")).join(") OR (");
   }
+
 }
 

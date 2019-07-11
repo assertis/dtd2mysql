@@ -14,6 +14,7 @@ import {MySQLStream, TableIndex} from "../database/MySQLStream";
 import byline = require("byline");
 import streamToPromise = require("stream-to-promise");
 import { MySQLTmpTable } from '../database/MySQLTmpTable';
+import { Table } from '../database/Table';
 
 const getExt = filename => path.extname(filename).slice(1).toUpperCase();
 const readFile = filename => byline.createStream(fs.createReadStream(filename, "utf8"));
@@ -23,12 +24,13 @@ const readFile = filename => byline.createStream(fs.createReadStream(filename, "
  */
 export class ImportFeedCommand implements CLICommand {
 
-  private index: {[name: string]: MySQLTable} = {};
+  private index: {[name: string]: Table}= {};
   
   constructor(
     protected readonly db: DatabaseConnection,
     protected readonly files: FeedConfig,
-    protected readonly tmpFolder: string
+    protected readonly tmpFolder: string,
+    protected readonly safeFailEnabled: boolean
   ) { }
 
   protected get fileArray(): FeedFile[] {
@@ -46,7 +48,7 @@ export class ImportFeedCommand implements CLICommand {
       console.error(err);
     }
 
-    return this.end();
+    return await this.end();
   }
 
   /**
@@ -71,10 +73,22 @@ export class ImportFeedCommand implements CLICommand {
       this.ensureALFExists(zipName.substring(0, zipName.length - 4));
     }
 
+    try {
+      await Promise.all(
+        fs.readdirSync(this.tmpFolder)
+          .filter(filename => this.getFeedFile(filename))
+          .map(filename => this.processFile(filename))
+      );
+    } catch (err) {
+      if(this.safeFailEnabled){
+        Object.values(this.index).forEach(async table => await table.revert());
+        console.log("Error occurred during data import. Import aborted!");
+        throw err;
+      }
+    }
+
     await Promise.all(
-      fs.readdirSync(this.tmpFolder)
-        .filter(filename => this.getFeedFile(filename))
-        .map(filename => this.processFile(filename))
+      Object.values(this.index).map(table => table.persist())
     );
 
     await this.updateLastFile(zipName);
@@ -143,6 +157,9 @@ export class ImportFeedCommand implements CLICommand {
     catch (err) {
       console.error(`Error processing ${filename}`);
       console.error(err);
+      if(this.safeFailEnabled){
+        throw err;
+      }
     }
   }
 
@@ -162,7 +179,9 @@ export class ImportFeedCommand implements CLICommand {
       if (!this.index[record.name]) {
         const db = record.orderedInserts ? await this.db.getConnection() : this.db;
 
-        this.index[record.name] = await MySQLTmpTable.create(db, record.name);
+        this.index[record.name] = this.safeFailEnabled ?
+          await MySQLTmpTable.create(db, record.name) :
+          new MySQLTable(db, record.name);
       }
     }
 
@@ -172,8 +191,11 @@ export class ImportFeedCommand implements CLICommand {
   /**
    * Close the underling database connection
    */
-  public end(): Promise<void> {
-    Object.values(this.index).forEach(table => table.close());
+  public async end(): Promise<void> {
+    await Promise.all(
+      Object.values(this.index).map(table => table.close())
+    );
+
     return this.db.end();
   }
 

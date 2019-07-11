@@ -99,7 +99,8 @@ export class Container {
     return new ImportFeedCommand(
       await this.getDatabaseConnection(),
       config.fares,
-      "/tmp/dtd/fares/"
+      "/tmp/dtd/fares/",
+      true
     );
   }
 
@@ -108,7 +109,8 @@ export class Container {
     return new ImportFeedCommand(
       await this.getDatabaseConnection(),
       config.routeing,
-      "/tmp/dtd/routeing/"
+      "/tmp/dtd/routeing/",
+      false
     );
   }
 
@@ -117,7 +119,8 @@ export class Container {
     return new ImportFeedCommand(
       await this.getDatabaseConnection(),
       config.timetable,
-      "/tmp/dtd/timetable/"
+      "/tmp/dtd/timetable/",
+      false
     );
   }
 
@@ -126,7 +129,8 @@ export class Container {
     return new ImportFeedCommand(
       await this.getDatabaseConnection(),
       config.nfm64,
-      "/tmp/dtd/nfm64/"
+      "/tmp/dtd/nfm64/",
+      false
     );
   }
 
@@ -135,7 +139,8 @@ export class Container {
     return new ImportIdmsFixedLinksCommand(
       await this.getDatabaseConnection(),
       config.idms,
-      "/tmp/idms/"
+      "/tmp/idms/",
+      false
     );
   }
 
@@ -144,7 +149,8 @@ export class Container {
     return new ImportIdmsGroupCommand(
       await this.getDatabaseConnection(),
       config.idms,
-      "/tmp/idms/"
+      "/tmp/idms/",
+      false
     );
   }
 

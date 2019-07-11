@@ -1,6 +1,7 @@
 import { DatabaseConnection } from "./DatabaseConnection";
 import { ParsedRecord, RecordAction } from "../feed/record/Record";
 import { MySQLTable } from './MySQLTable';
+import { Table } from './Table';
 
 
 const TMP_PREFIX = "_tmp_";
@@ -9,7 +10,7 @@ const TMP_PREFIX = "_tmp_";
 /**
  * Stateful class that provides access to a MySQL table and acts as buffer for inserts.
  */
-export class MySQLTmpTable extends MySQLTable {
+export class MySQLTmpTable extends MySQLTable implements Table{
 
 
   private readonly originalTableName;
@@ -41,6 +42,28 @@ export class MySQLTmpTable extends MySQLTable {
     return this;
   }
 
+  /**
+   * overwrite original table with _tmp_ table data.
+   */
+  public async persist(): Promise<void> {
+    await Promise.all([
+      this.flush(RecordAction.Delete),
+      this.flush(RecordAction.Update),
+      this.flush(RecordAction.Insert)
+    ]);
+
+    await this.truncateTable(this.originalTableName);
+    await this.db.query('INSERT INTO `' + this.originalTableName + '` SELECT * FROM `' + this.tableName + '`');
+    await this.db.query('DROP TABLE `' + this.tableName + '`');
+  }
+
+  /**
+   * Drop tmp table and forget about it.
+   */
+  public async revert(): Promise<void> {
+    await this.db.query('DROP TABLE `' + this.tableName + '`');
+  }
+
   protected async createTmpTableIfNotExists(): Promise<void> {
     if (this.tmpExists) {
       return;
@@ -49,7 +72,7 @@ export class MySQLTmpTable extends MySQLTable {
     try {
       await this.assertTableNotExists();
     } catch (e) {
-      this.truncateTable();
+      this.truncateTable(this.tableName);
       this.tmpExists = true;
       return;
     }
@@ -66,8 +89,19 @@ export class MySQLTmpTable extends MySQLTable {
     }
   }
 
-  protected async truncateTable(): Promise<void> {
-    await this.db.query("TRUNCATE `" + this.tableName + "`");
+  protected async truncateTable(tableName: string): Promise<void> {
+    await this.db.query("TRUNCATE `" + tableName + "`");
+  }
+
+  /**
+   * Release database.
+   * In opposite to MySQLTable implementation,
+   * flush remaining records is executed in persist() method.
+   */
+  public async close(): Promise<any> {
+    if (this.db.release) {
+      await this.db.release();
+    }
   }
 }
 

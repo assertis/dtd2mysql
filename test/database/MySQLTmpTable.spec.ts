@@ -40,7 +40,7 @@ describe("MySQLTmpTable", () => {
     const values = { some: "value" };
 
     table.apply({ action, values });
-    table.close();
+    table.persist();
 
     chai.expect(db.queries[0]).is.equal("INSERT IGNORE INTO \`_tmp_my_table\` VALUES ?");
   });
