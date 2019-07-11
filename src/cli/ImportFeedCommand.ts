@@ -130,6 +130,7 @@ export class ImportFeedCommand implements CLICommand {
    */
   private async processFile(filename: string): Promise<any> {
     const file = this.getFeedFile(filename);
+    console.log("processing " + filename);
     const tables = await this.tables(file);
     const tableStream = new MySQLStream(filename, file, tables);
     const stream = readFile(this.tmpFolder + filename).pipe(tableStream);
@@ -161,7 +162,7 @@ export class ImportFeedCommand implements CLICommand {
       if (!this.index[record.name]) {
         const db = record.orderedInserts ? await this.db.getConnection() : this.db;
 
-        this.index[record.name] = new MySQLTmpTable(db, record.name);
+        this.index[record.name] = await MySQLTmpTable.create(db, record.name);
       }
     }
 

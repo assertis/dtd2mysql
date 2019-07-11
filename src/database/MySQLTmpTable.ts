@@ -9,7 +9,7 @@ const TMP_PREFIX = "_tmp_";
 /**
  * Stateful class that provides access to a MySQL table and acts as buffer for inserts.
  */
-export class MySQLTmpTable extends MySQLTable{
+export class MySQLTmpTable extends MySQLTable {
 
 
   private readonly originalTableName;
@@ -24,29 +24,50 @@ export class MySQLTmpTable extends MySQLTable{
     this.originalTableName = tableName;
   }
 
-  /**
-   * Flush the table
-   */
-  protected async flush(type: RecordAction): Promise<void> {
-    const rows = this.buffer[type];
+  public static async create(
+    db: DatabaseConnection,
+    tableName: string,
+    flushLimit: number = 5000
+  ): Promise<MySQLTmpTable> {
+    const self = new this(db, tableName, flushLimit);
+    await self.init();
 
-    if (rows.length > 0) {
-      this.buffer[type] = [];
-
-      this.createTmpTableIfNotExists();
-
-      return this.queryWithRetry(type, rows);
-    }
+    return self;
   }
 
-  protected createTmpTableIfNotExists(): void {
+  public async init(): Promise<MySQLTmpTable>
+  {
+    await this.createTmpTableIfNotExists();
+    return this;
+  }
+
+  protected async createTmpTableIfNotExists(): Promise<void> {
     if (this.tmpExists) {
       return;
     }
 
-    this.db.query(`CREATE TABLE ? SELECT * FROM ?`, [this.tableName, this.originalTableName])
+    try {
+      await this.assertTableNotExists();
+    } catch (e) {
+      this.truncateTable();
+      this.tmpExists = true;
+      return;
+    }
+
+    await this.db.query('CREATE TABLE `' + this.tableName + '` LIKE `' + this.originalTableName + '`');
+    await this.db.query('INSERT INTO `' + this.tableName + '` SELECT * FROM `' + this.originalTableName + '`');
     this.tmpExists = true;
   }
 
+  protected async assertTableNotExists(): Promise<void> {
+    const [rows] = await this.db.query(`SHOW TABLES LIKE ?`, [this.tableName]);
+    if (rows.length > 0) {
+      throw new Error("Assertion failed. Table " + this.tableName + " already exists!");
+    }
+  }
+
+  protected async truncateTable(): Promise<void> {
+    await this.db.query("TRUNCATE `" + this.tableName + "`");
+  }
 }
 
