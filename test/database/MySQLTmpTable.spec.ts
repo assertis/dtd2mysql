@@ -98,6 +98,22 @@ describe("MySQLTmpTable", () => {
     chai.expect(truncates.length).is.equal(1);
   });
 
+  it("should copy data to _tmp table if it's incremental update", async () => {
+    const db = new MockDatabaseConnection();
+    db.addMockResponse('SHOW TABLES LIKE ?', ["_tmp_my_table"]);
+    await MySQLTmpTable.create(db, "my_table", true, 1);
+
+    const createTable = db.queries.filter(s => s.includes("CREATE TABLE "));
+    chai.expect(createTable.length).is.equal(0);
+
+    const truncates = db.queries.filter(s => s.includes("TRUNCATE "));
+    chai.expect(truncates.length).is.equal(1);
+
+    const copyStatementRegex = new RegExp('^INSERT INTO .* SELECT \* FROM .*');
+    const copyData = db.queries.filter(s => copyStatementRegex.test(s));
+    chai.expect(copyData.length).is.equal(0);
+  });
+
 });
 
 class MockDatabaseConnection implements DatabaseConnection {
