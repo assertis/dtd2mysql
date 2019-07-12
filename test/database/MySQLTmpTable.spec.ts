@@ -11,7 +11,7 @@ describe("MySQLTmpTable", () => {
   // scroll down to find "differences tests".
   it("inserts to a table", () => {
     const db = new MockDatabaseConnection();
-    const table = new MySQLTmpTable(db, "my_table", 1);
+    const table = new MySQLTmpTable(db, "my_table", false, 1);
     const action = RecordAction.Insert;
     const values = { some: "value" };
 
@@ -22,7 +22,7 @@ describe("MySQLTmpTable", () => {
 
   it("buffers inserts", () => {
     const db = new MockDatabaseConnection();
-    const table = new MySQLTmpTable(db, "my_table", 2);
+    const table = new MySQLTmpTable(db, "my_table", false, 2);
     const action = RecordAction.Insert;
     const values = { some: "value" };
 
@@ -35,7 +35,7 @@ describe("MySQLTmpTable", () => {
 
   it("flushes all remaining inserts", () => {
     const db = new MockDatabaseConnection();
-    const table = new MySQLTmpTable(db, "my_table", 2);
+    const table = new MySQLTmpTable(db, "my_table", false, 2);
     const action = RecordAction.Insert;
     const values = { some: "value" };
 
@@ -47,7 +47,7 @@ describe("MySQLTmpTable", () => {
 
   it("updates records", () => {
     const db = new MockDatabaseConnection();
-    const table = new MySQLTmpTable(db, "my_table", 1);
+    const table = new MySQLTmpTable(db, "my_table", false, 1);
     const action = RecordAction.Update;
     const values = { some: "value" };
 
@@ -58,7 +58,7 @@ describe("MySQLTmpTable", () => {
 
   it("deletes records", () => {
     const db = new MockDatabaseConnection();
-    const table = new MySQLTmpTable(db, "my_table", 2);
+    const table = new MySQLTmpTable(db, "my_table", false, 2);
     const action = RecordAction.Delete;
     const values = { some: "value", other: "value" };
 
@@ -77,7 +77,7 @@ describe("MySQLTmpTable", () => {
   it("should create table if not exists", async () => {
     const db = new MockDatabaseConnection();
     db.addMockResponse('SHOW TABLES LIKE ?', []);
-    await MySQLTmpTable.create(db, "my_table", 2);
+    await MySQLTmpTable.create(db, "my_table", false, 2);
 
     const createTable = db.queries.filter(s => s.includes("CREATE TABLE "));
     chai.expect(createTable.length).is.equal(1);
@@ -89,7 +89,7 @@ describe("MySQLTmpTable", () => {
   it("should not create table if exists but should truncate it", async () => {
     const db = new MockDatabaseConnection();
     db.addMockResponse('SHOW TABLES LIKE ?', ["_tmp_my_table"]);
-    await MySQLTmpTable.create(db, "my_table", 2);
+    await MySQLTmpTable.create(db, "my_table", false, 2);
 
     const createTable = db.queries.filter(s => s.includes("CREATE TABLE "));
     chai.expect(createTable.length).is.equal(0);

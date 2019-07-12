@@ -1,6 +1,6 @@
 import * as memoize from "memoized-class-decorator";
 import {CLICommand} from "./CLICommand";
-import {ImportFeedCommand} from "./ImportFeedCommand";
+import { ImportFeedCommand, ImportFeedCommandInterface } from "./ImportFeedCommand";
 import {DatabaseConfiguration, DatabaseConnection} from "../database/DatabaseConnection";
 import config, {viewsSqlFactory} from "../../config";
 import {CleanFaresCommand} from "./CleanFaresCommand";
@@ -28,6 +28,7 @@ import {
   temporaryDatabaseNameFactory
 } from "../database/OfflineDataProcessor";
 import {CleanupDatabasesCommand} from "./CleanupDatabasesCommand";
+import { ImportFeedCommandWithFallback } from './ImportFeedCommandWithFallback';
 
 export class Container {
 
@@ -68,6 +69,8 @@ export class Container {
         return this.getDownloadIdmsGroupCommand();
       case "--get-fares":
         return this.getDownloadAndProcessCommand("/fares/", this.getFaresImportCommand());
+      case "--get-fares-with-fallback":
+        return this.getDownloadAndProcessCommand("/fares/", this.getFaresImportCommandWithFallback());
       case "--get-timetable":
         return this.getDownloadAndProcessCommand("/timetable/", this.getTimetableImportCommand());
       case "--get-routeing":
@@ -99,8 +102,16 @@ export class Container {
     return new ImportFeedCommand(
       await this.getDatabaseConnection(),
       config.fares,
-      "/tmp/dtd/fares/",
-      true
+      "/tmp/dtd/fares/"
+    );
+  }
+
+  @memoize
+  public async getFaresImportCommandWithFallback(): Promise<ImportFeedCommandWithFallback> {
+    return new ImportFeedCommandWithFallback(
+      await this.getDatabaseConnection(),
+      config.fares,
+      "/tmp/dtd/fares/"
     );
   }
 
@@ -109,8 +120,7 @@ export class Container {
     return new ImportFeedCommand(
       await this.getDatabaseConnection(),
       config.routeing,
-      "/tmp/dtd/routeing/",
-      false
+      "/tmp/dtd/routeing/"
     );
   }
 
@@ -119,8 +129,7 @@ export class Container {
     return new ImportFeedCommand(
       await this.getDatabaseConnection(),
       config.timetable,
-      "/tmp/dtd/timetable/",
-      false
+      "/tmp/dtd/timetable/"
     );
   }
 
@@ -129,8 +138,7 @@ export class Container {
     return new ImportFeedCommand(
       await this.getDatabaseConnection(),
       config.nfm64,
-      "/tmp/dtd/nfm64/",
-      false
+      "/tmp/dtd/nfm64/"
     );
   }
 
@@ -139,8 +147,7 @@ export class Container {
     return new ImportIdmsFixedLinksCommand(
       await this.getDatabaseConnection(),
       config.idms,
-      "/tmp/idms/",
-      false
+      "/tmp/idms/"
     );
   }
 
@@ -149,8 +156,7 @@ export class Container {
     return new ImportIdmsGroupCommand(
       await this.getDatabaseConnection(),
       config.idms,
-      "/tmp/idms/",
-      false
+      "/tmp/idms/"
     );
   }
 
@@ -249,7 +255,7 @@ export class Container {
   }
 
   @memoize
-  private async getDownloadAndProcessCommand(path: string, importFeedProcess: Promise<ImportFeedCommand>): Promise<DownloadAndProcessCommand> {
+  private async getDownloadAndProcessCommand(path: string, importFeedProcess: Promise<ImportFeedCommandInterface>): Promise<DownloadAndProcessCommand> {
     return new DownloadAndProcessCommand(
       await this.getDownloadCommand(path),
       await importFeedProcess,

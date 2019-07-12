@@ -10,34 +10,41 @@ const TMP_PREFIX = "_tmp_";
 /**
  * Stateful class that provides access to a MySQL table and acts as buffer for inserts.
  */
-export class MySQLTmpTable extends MySQLTable implements Table{
+export class MySQLTmpTable extends MySQLTable implements Table {
 
+  // TO-DO:
+  // 1. test it somehow ....
+  // 2. add feature switch to configuration
+  // 3. ....
 
   private readonly originalTableName;
   private tmpExists = false;
+  private readonly isIncremental;
 
   constructor(
     db: DatabaseConnection,
     tableName: string,
+    isIncremental: boolean,
     flushLimit: number = 5000
   ) {
     super(db, TMP_PREFIX + tableName, flushLimit);
     this.originalTableName = tableName;
+    this.isIncremental = isIncremental
   }
 
   public static async create(
     db: DatabaseConnection,
     tableName: string,
+    isIncremental: boolean,
     flushLimit: number = 5000
   ): Promise<MySQLTmpTable> {
-    const self = new this(db, tableName, flushLimit);
+    const self = new this(db, tableName, isIncremental, flushLimit);
     await self.init();
 
     return self;
   }
 
-  public async init(): Promise<MySQLTmpTable>
-  {
+  public async init(): Promise<MySQLTmpTable> {
     await this.createTmpTableIfNotExists();
     return this;
   }
@@ -78,7 +85,10 @@ export class MySQLTmpTable extends MySQLTable implements Table{
     }
 
     await this.db.query('CREATE TABLE `' + this.tableName + '` LIKE `' + this.originalTableName + '`');
-    await this.db.query('INSERT INTO `' + this.tableName + '` SELECT * FROM `' + this.originalTableName + '`');
+    // _tmp table should be populated with "old" data only in case of incremental update.
+    if (this.isIncremental) {
+      await this.db.query('INSERT INTO `' + this.tableName + '` SELECT * FROM `' + this.originalTableName + '`');
+    }
     this.tmpExists = true;
   }
 
