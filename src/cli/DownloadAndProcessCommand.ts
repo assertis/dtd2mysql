@@ -1,6 +1,6 @@
 
 import {CLICommand} from "./CLICommand";
-import {ImportFeedCommand} from "./ImportFeedCommand";
+import { ImportFeedCommand } from "./ImportFeedCommand";
 import {DatabaseConnection} from "../database/DatabaseConnection";
 
 export class DownloadAndProcessCommand implements CLICommand {

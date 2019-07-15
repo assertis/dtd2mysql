@@ -1,22 +1,37 @@
 import {DatabaseConnection} from "./DatabaseConnection";
 import {ParsedRecord, RecordAction} from "../feed/record/Record";
+import { Table } from './Table';
 
 /**
  * Stateful class that provides access to a MySQL table and acts as buffer for inserts.
  */
-export class MySQLTable {
+export class MySQLTable implements Table{
 
-  private readonly buffer = {
+  protected readonly buffer = {
     [RecordAction.Insert]: [] as ParsedRecord[],
     [RecordAction.Update]: [] as ParsedRecord[],
     [RecordAction.Delete]: [] as ParsedRecord[],
   };
 
   constructor(
-    private readonly db: DatabaseConnection,
-    private readonly tableName: string,
-    private readonly flushLimit: number = 5000
+    protected readonly db: DatabaseConnection,
+    protected readonly tableName: string,
+    protected readonly flushLimit: number = 5000
   ) {}
+
+  /**
+   * This implementation persist records on the fly in apply() method.
+   */
+  public async persist(): Promise<void> {
+    throw new Error("MySQLTable do not support this method! Records were already persisted on-the-fly.");
+  }
+
+  /**
+   * This implementation do not support reverting!!
+   */
+  public async revert(): Promise<void> {
+    throw new Error("MySQLTable do not support reverting!");
+  }
 
   /**
    * Insert the given row to the table
@@ -32,7 +47,7 @@ export class MySQLTable {
   /**
    * Flush the table
    */
-  private async flush(type: RecordAction): Promise<void> {
+  protected async flush(type: RecordAction): Promise<void> {
     const rows = this.buffer[type];
 
     if (rows.length > 0) {
@@ -60,7 +75,7 @@ export class MySQLTable {
   /**
    * Query with retry. Sometimes locking errors occur
    */
-  private async queryWithRetry(type: RecordAction, rows: ParsedRecord[], numRetries: number = 3): Promise<void> {
+  protected async queryWithRetry(type: RecordAction, rows: ParsedRecord[], numRetries: number = 3): Promise<void> {
     try {
       await this.query(type, rows);
     }
@@ -74,23 +89,29 @@ export class MySQLTable {
     }
   }
 
-  private query(type: RecordAction, rows: ParsedRecord[]): Promise<void> {
+  protected query(type: RecordAction, rows: ParsedRecord[]): Promise<void> {
     const rowValues = rows.map(r => Object.values(r.values));
 
-    switch (type) {
-      case RecordAction.Insert:
-        return this.db.query(`INSERT IGNORE INTO \`${this.tableName}\` VALUES ?`, [rowValues]);
-      case RecordAction.Update:
-        return this.db.query(`REPLACE INTO \`${this.tableName}\` VALUES ?`, [rowValues]);
-      case RecordAction.Delete:
-        return this.db.query(`DELETE FROM \`${this.tableName}\` WHERE (${this.getDeleteSQL(rows)})`, [].concat.apply([], rowValues));
-      default:
-        throw new Error("Unknown record action: " + type);
+    try {
+      switch (type) {
+        case RecordAction.Insert:
+          return this.db.query(`INSERT IGNORE INTO \`${this.tableName}\` VALUES ?`, [rowValues]);
+        case RecordAction.Update:
+          return this.db.query(`REPLACE INTO \`${this.tableName}\` VALUES ?`, [rowValues]);
+        case RecordAction.Delete:
+          return this.db.query(`DELETE FROM \`${this.tableName}\` WHERE (${this.getDeleteSQL(rows)})`, [].concat.apply([], rowValues));
+        default:
+          throw new Error("Unknown record action: " + type);
+      }
+    } catch (err) {
+      const x = 1;
+      throw err;
     }
   }
 
-  private getDeleteSQL(rows: ParsedRecord[]): string {
+  protected getDeleteSQL(rows: ParsedRecord[]): string {
     return rows.map(row => Object.keys(row.values).map(k => `\`${k}\` = ?`).join(" AND ")).join(") OR (");
   }
+
 }
 

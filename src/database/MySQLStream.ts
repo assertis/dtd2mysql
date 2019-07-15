@@ -1,7 +1,7 @@
 import {Writable} from "stream";
-import {MySQLTable} from "./MySQLTable";
 import {FeedFile} from "../feed/file/FeedFile";
 import {ParsedRecord} from "../feed/record/Record";
+import { Table } from './Table';
 
 export class MySQLStream extends Writable {
 
@@ -39,8 +39,6 @@ export class MySQLStream extends Writable {
 
   public async _final(callback: WritableCallback): Promise<void> {
     try {
-      await this.close();
-
       callback();
     }
     catch (err) {
@@ -53,5 +51,5 @@ export class MySQLStream extends Writable {
 export type WritableCallback = (error?: Error | null) => void;
 
 export type TableIndex = {
-  [tableName: string]: MySQLTable;
+  [tableName: string]: Table;
 }

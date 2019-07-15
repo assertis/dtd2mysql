@@ -1,37 +1,45 @@
 import AdmZip = require("adm-zip");
-import {CLICommand} from "./CLICommand";
-import {FeedConfig, viewsSqlFactory} from "../../config";
-import {FeedFile} from "../feed/file/FeedFile";
-import {MySQLSchema} from "../database/MySQLSchema";
-import {DatabaseConnection} from "../database/DatabaseConnection";
+import { CLICommand } from "./CLICommand";
+import { FeedConfig } from "../../config";
+import { FeedFile } from "../feed/file/FeedFile";
+import { MySQLSchema } from "../database/MySQLSchema";
+import { DatabaseConnection } from "../database/DatabaseConnection";
 import * as path from "path";
-import {MySQLTable} from "../database/MySQLTable";
 import * as memoize from "memoized-class-decorator";
 import fs = require("fs-extra");
-import {MultiRecordFile} from "../feed/file/MultiRecordFile";
-import {RecordWithManualIdentifier} from "../feed/record/FixedWidthRecord";
-import {MySQLStream, TableIndex} from "../database/MySQLStream";
+import { MultiRecordFile } from "../feed/file/MultiRecordFile";
+import { RecordWithManualIdentifier } from "../feed/record/FixedWidthRecord";
+import { MySQLStream, TableIndex } from "../database/MySQLStream";
 import byline = require("byline");
 import streamToPromise = require("stream-to-promise");
+import { MySQLTmpTable } from '../database/MySQLTmpTable';
 
 const getExt = filename => path.extname(filename).slice(1).toUpperCase();
 const readFile = filename => byline.createStream(fs.createReadStream(filename, "utf8"));
 
+export interface ImportFeedTransactionalCommandInterface {
+  doImport(filePaths: string[]): Promise<void>;
+
+  commit(): Promise<void>;
+
+  rollback(): Promise<void>;
+
+  end(): Promise<void>
+}
+
 /**
  * Imports one of the feeds
  */
-export class ImportFeedCommand implements CLICommand {
+export class ImportFeedTransactionalCommand implements CLICommand, ImportFeedTransactionalCommandInterface {
 
-  private index: {[name: string]: MySQLTable} = {};
+  private index: { [name: string]: MySQLTmpTable } = {};
+  private lastProcessedFile: string | null = null;
 
   constructor(
     protected readonly db: DatabaseConnection,
     protected readonly files: FeedConfig,
     protected readonly tmpFolder: string
-  ) { }
-
-  protected get fileArray(): FeedFile[] {
-    return Object.values(this.files);
+  ) {
   }
 
   /**
@@ -39,9 +47,8 @@ export class ImportFeedCommand implements CLICommand {
    */
   public async run(argv: string[]): Promise<void> {
     try {
-      await this.doImport(argv[3]);
-    }
-    catch (err) {
+      await this.doImport([argv[3]]);
+    } catch (err) {
       console.error(err);
     }
 
@@ -51,7 +58,32 @@ export class ImportFeedCommand implements CLICommand {
   /**
    * Extract the zip, set up the schema and do the inserts
    */
-  public async doImport(filePath: string): Promise<void> {
+  public async doImport(filePaths: string[]): Promise<void> {
+    for (const filePath of filePaths) {
+      await this.importSingleFile(filePath);
+    }
+
+    if (this.lastProcessedFile !== null) {
+      await this.updateLastFile(this.lastProcessedFile);
+    }
+  }
+
+  public async commit(): Promise<void> {
+    await Promise.all(
+      Object.values(this.index)
+            .map(table => table.persist())
+    );
+    console.log("Data persisted");
+  }
+
+  public async rollback(): Promise<void> {
+    await Promise.all(
+      Object.values(this.index).map(table => table.revert())
+    );
+    console.log("Import aborted!");
+  }
+
+  private async importSingleFile(filePath: string): Promise<void> {
     console.log(`Extracting ${filePath} to ${this.tmpFolder}`);
     fs.emptyDirSync(this.tmpFolder);
 
@@ -60,44 +92,21 @@ export class ImportFeedCommand implements CLICommand {
     const zipName = path.basename(filePath);
 
     // if the file is a not an incremental, reset the database schema
-    if (zipName.charAt(4) !== "C") {
-      await Promise.all(this.fileArray.map(file => this.setupSchema(file)));
-      await this.createLastProcessedSchema();
-    }
+    const isIncremental = zipName.charAt(4) === "C";
 
     if (this.files["CFA"] instanceof MultiRecordFile) {
       await this.setLastScheduleId();
       this.ensureALFExists(zipName.substring(0, zipName.length - 4));
     }
 
-    await Promise.all(
-      fs.readdirSync(this.tmpFolder)
-        .filter(filename => this.getFeedFile(filename))
-        .map(filename => this.processFile(filename))
-    );
+    // no, we can't squeeze those 2 Promise.all() into single one.
+    await Promise.all(fs.readdirSync(this.tmpFolder)
+                        .filter(filename => this.getFeedFile(filename))
+                        .map(filename => this.writeFileData(filename, isIncremental)));
 
-    await this.updateLastFile(zipName);
-  }
+    await Promise.all(Object.values(this.index).map(table => table.flushAll()));
 
-  /**
-   * Drop and recreate the tables
-   */
-  protected async setupSchema(file: FeedFile): Promise<void> {
-    await Promise.all(this.schemas(file).map(schema => schema.dropSchema()));
-    await Promise.all(this.schemas(file).map(schema => schema.createSchema()));
-  }
-
-  /**
-   * Create the last_file table (if it doesn't already exist)
-   */
-  private createLastProcessedSchema(): Promise<void> {
-    return this.db.query(`
-      CREATE TABLE IF NOT EXISTS log ( 
-        id INT(11) unsigned not null primary key auto_increment, 
-        filename VARCHAR(12), 
-        processed DATETIME 
-      )
-    `);
+    this.lastProcessedFile = zipName;
   }
 
   /**
@@ -125,9 +134,9 @@ export class ImportFeedCommand implements CLICommand {
   /**
    * Process the records inside the given file
    */
-  private async processFile(filename: string): Promise<any> {
+  private async writeFileData(filename: string, isIncremental: boolean): Promise<any> {
     const file = this.getFeedFile(filename);
-    const tables = await this.tables(file);
+    const tables = await this.tables(file, isIncremental);
     const tableStream = new MySQLStream(filename, file, tables);
     const stream = readFile(this.tmpFolder + filename).pipe(tableStream);
 
@@ -135,10 +144,10 @@ export class ImportFeedCommand implements CLICommand {
       await streamToPromise(stream);
 
       console.log(`Finished processing ${filename}`);
-    }
-    catch (err) {
-      console.error(`Error processing ${filename}`);
+    } catch (err) {
+      console.error(`Error during processing ${filename}`);
       console.error(err);
+      throw err;
     }
   }
 
@@ -153,12 +162,12 @@ export class ImportFeedCommand implements CLICommand {
   }
 
   @memoize
-  protected async tables(file: FeedFile): Promise<TableIndex> {
+  protected async tables(file: FeedFile, isIncremental: boolean): Promise<TableIndex> {
     for (const record of file.recordTypes) {
       if (!this.index[record.name]) {
         const db = record.orderedInserts ? await this.db.getConnection() : this.db;
 
-        this.index[record.name] = new MySQLTable(db, record.name);
+        this.index[record.name] = await MySQLTmpTable.create(db, record.name, isIncremental);
       }
     }
 
@@ -173,7 +182,7 @@ export class ImportFeedCommand implements CLICommand {
       Object.values(this.index).map(table => table.close())
     );
 
-    return await this.db.end();
+    return this.db.end();
   }
 
 }

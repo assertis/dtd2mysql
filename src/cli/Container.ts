@@ -1,6 +1,6 @@
 import * as memoize from "memoized-class-decorator";
 import {CLICommand} from "./CLICommand";
-import {ImportFeedCommand} from "./ImportFeedCommand";
+import { ImportFeedCommand } from "./ImportFeedCommand";
 import {DatabaseConfiguration, DatabaseConnection} from "../database/DatabaseConnection";
 import config, {viewsSqlFactory} from "../../config";
 import {CleanFaresCommand} from "./CleanFaresCommand";
@@ -24,10 +24,11 @@ import {DownloadFileFromS3Command} from "./DownloadFileFromS3Command";
 import {idmsBucket, idmsFixedLinksFilename, idmsGroupFilename, idmsPrefix, idmsUrl} from "../../config/idms";
 import {ImportIdmsGroupCommand} from "./ImportIdmsGroupCommand";
 import {
-  OfflineDataProcessor,
-  temporaryDatabaseNameFactory
+  OfflineDataProcessor
 } from "../database/OfflineDataProcessor";
 import {CleanupDatabasesCommand} from "./CleanupDatabasesCommand";
+import { ImportFeedTransactionalCommand, ImportFeedTransactionalCommandInterface } from './ImportFeedTransactionalCommand';
+import { DownloadAndProcessInTransactionCommand } from './DownloadAndProcessInTransactionCommand';
 
 export class Container {
 
@@ -68,6 +69,8 @@ export class Container {
         return this.getDownloadIdmsGroupCommand();
       case "--get-fares":
         return this.getDownloadAndProcessCommand("/fares/", this.getFaresImportCommand());
+      case "--get-fares-in-transaction":
+        return this.getDownloadAndProcessInTransactionCommand("/fares/", this.getFaresImportCommandWithFallback());
       case "--get-timetable":
         return this.getDownloadAndProcessCommand("/timetable/", this.getTimetableImportCommand());
       case "--get-routeing":
@@ -97,6 +100,15 @@ export class Container {
   @memoize
   public async getFaresImportCommand(): Promise<ImportFeedCommand> {
     return new ImportFeedCommand(
+      await this.getDatabaseConnection(),
+      config.fares,
+      "/tmp/dtd/fares/"
+    );
+  }
+
+  @memoize
+  public async getFaresImportCommandWithFallback(): Promise<ImportFeedTransactionalCommand> {
+    return new ImportFeedTransactionalCommand(
       await this.getDatabaseConnection(),
       config.fares,
       "/tmp/dtd/fares/"
@@ -245,6 +257,15 @@ export class Container {
   @memoize
   private async getDownloadAndProcessCommand(path: string, importFeedProcess: Promise<ImportFeedCommand>): Promise<DownloadAndProcessCommand> {
     return new DownloadAndProcessCommand(
+      await this.getDownloadCommand(path),
+      await importFeedProcess,
+      await this.getDatabaseConnection()
+    );
+  }
+
+  private async getDownloadAndProcessInTransactionCommand(path: string, importFeedProcess: Promise<ImportFeedTransactionalCommandInterface>)
+  {
+    return new DownloadAndProcessInTransactionCommand(
       await this.getDownloadCommand(path),
       await importFeedProcess,
       await this.getDatabaseConnection()
