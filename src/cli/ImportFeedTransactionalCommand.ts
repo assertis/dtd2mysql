@@ -17,7 +17,7 @@ import { MySQLTmpTable } from '../database/MySQLTmpTable';
 const getExt = filename => path.extname(filename).slice(1).toUpperCase();
 const readFile = filename => byline.createStream(fs.createReadStream(filename, "utf8"));
 
-export interface ImportFeedInTransactionCommand {
+export interface ImportFeedTransactionalCommandInterface {
   doImport(filePaths: string[]): Promise<void>;
 
   commit(): Promise<void>;
@@ -30,7 +30,7 @@ export interface ImportFeedInTransactionCommand {
 /**
  * Imports one of the feeds
  */
-export class ImportFeedCommandWithFallback implements CLICommand, ImportFeedInTransactionCommand {
+export class ImportFeedTransactionalCommand implements CLICommand, ImportFeedTransactionalCommandInterface {
 
   private index: { [name: string]: MySQLTmpTable } = {};
   private lastProcessedFile: string | null = null;

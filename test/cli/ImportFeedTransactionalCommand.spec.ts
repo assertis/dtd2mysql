@@ -1,5 +1,5 @@
 import * as chai from "chai";
-import { ImportFeedCommandWithFallback } from '../../src/cli/ImportFeedCommandWithFallback';
+import { ImportFeedTransactionalCommand } from '../../src/cli/ImportFeedTransactionalCommand';
 import specification from '../../config/fares';
 import * as fs from 'fs';
 import { DownloadAndProcessInTransactionCommand } from '../../src/cli/DownloadAndProcessInTransactionCommand';
@@ -9,7 +9,7 @@ import { FileProvider } from '../../src/cli/DownloadAndProcessCommand';
  * THIS IS NOT A UNIT TEST !!!!!
  * IT"S DISABLED (it.skip()) BY DEFAULT !!!!
  *
- * if you want to run it, remove all .skip() (so it will be like regular it.skip("...", () => { ... }); ).
+ * if you want to run it, remove all .skip() (so it will be like regular it("...", () => { ... }); ).
  * Please do not forget to set DATABASE_NAME environment variable.
  * It do not have default option to not override (corrupt) any database which is not
  * specified explicit. If you don't want to corrupt your local `fares` database, set it like:
@@ -47,7 +47,7 @@ describe("It should perform data update and persist results only in case of succ
           return fileNames;
         }
       } as FileProvider,
-      new ImportFeedCommandWithFallback(db, specification, tmpFolder),
+      new ImportFeedTransactionalCommand(db, specification, tmpFolder),
       db
     );
   };

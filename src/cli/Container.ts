@@ -27,7 +27,7 @@ import {
   OfflineDataProcessor
 } from "../database/OfflineDataProcessor";
 import {CleanupDatabasesCommand} from "./CleanupDatabasesCommand";
-import { ImportFeedCommandWithFallback, ImportFeedInTransactionCommand } from './ImportFeedCommandWithFallback';
+import { ImportFeedTransactionalCommand, ImportFeedTransactionalCommandInterface } from './ImportFeedTransactionalCommand';
 import { DownloadAndProcessInTransactionCommand } from './DownloadAndProcessInTransactionCommand';
 
 export class Container {
@@ -107,8 +107,8 @@ export class Container {
   }
 
   @memoize
-  public async getFaresImportCommandWithFallback(): Promise<ImportFeedCommandWithFallback> {
-    return new ImportFeedCommandWithFallback(
+  public async getFaresImportCommandWithFallback(): Promise<ImportFeedTransactionalCommand> {
+    return new ImportFeedTransactionalCommand(
       await this.getDatabaseConnection(),
       config.fares,
       "/tmp/dtd/fares/"
@@ -263,7 +263,7 @@ export class Container {
     );
   }
 
-  private async getDownloadAndProcessInTransactionCommand(path: string, importFeedProcess: Promise<ImportFeedInTransactionCommand>)
+  private async getDownloadAndProcessInTransactionCommand(path: string, importFeedProcess: Promise<ImportFeedTransactionalCommandInterface>)
   {
     return new DownloadAndProcessInTransactionCommand(
       await this.getDownloadCommand(path),

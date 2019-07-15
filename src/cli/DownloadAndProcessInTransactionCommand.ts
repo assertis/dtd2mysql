@@ -1,12 +1,12 @@
 import { CLICommand } from "./CLICommand";
 import { DatabaseConnection } from "../database/DatabaseConnection";
-import { ImportFeedInTransactionCommand } from './ImportFeedCommandWithFallback';
+import { ImportFeedTransactionalCommandInterface } from './ImportFeedTransactionalCommand';
 
 export class DownloadAndProcessInTransactionCommand implements CLICommand {
 
   constructor(
     private readonly download: FileProvider,
-    private readonly process: ImportFeedInTransactionCommand,
+    private readonly process: ImportFeedTransactionalCommandInterface,
     protected readonly db: DatabaseConnection
   ) {
   }

@@ -23,7 +23,7 @@ export class MySQLTable implements Table{
    * This implementation persist records on the fly in apply() method.
    */
   public async persist(): Promise<void> {
-    return;
+    throw new Error("MySQLTable do not support this method! Records were already persisted on-the-fly.");
   }
 
   /**
