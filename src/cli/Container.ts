@@ -69,7 +69,7 @@ export class Container {
         return this.getDownloadIdmsGroupCommand();
       case "--get-fares":
         return this.getDownloadAndProcessCommand("/fares/", this.getFaresImportCommand());
-      case "--get-fares-with-fallback":
+      case "--get-fares-in-transaction":
         return this.getDownloadAndProcessInTransactionCommand("/fares/", this.getFaresImportCommandWithFallback());
       case "--get-timetable":
         return this.getDownloadAndProcessCommand("/timetable/", this.getTimetableImportCommand());
