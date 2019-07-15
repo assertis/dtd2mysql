@@ -92,15 +92,20 @@ export class MySQLTable implements Table{
   protected query(type: RecordAction, rows: ParsedRecord[]): Promise<void> {
     const rowValues = rows.map(r => Object.values(r.values));
 
-    switch (type) {
-      case RecordAction.Insert:
-        return this.db.query(`INSERT IGNORE INTO \`${this.tableName}\` VALUES ?`, [rowValues]);
-      case RecordAction.Update:
-        return this.db.query(`REPLACE INTO \`${this.tableName}\` VALUES ?`, [rowValues]);
-      case RecordAction.Delete:
-        return this.db.query(`DELETE FROM \`${this.tableName}\` WHERE (${this.getDeleteSQL(rows)})`, [].concat.apply([], rowValues));
-      default:
-        throw new Error("Unknown record action: " + type);
+    try {
+      switch (type) {
+        case RecordAction.Insert:
+          return this.db.query(`INSERT IGNORE INTO \`${this.tableName}\` VALUES ?`, [rowValues]);
+        case RecordAction.Update:
+          return this.db.query(`REPLACE INTO \`${this.tableName}\` VALUES ?`, [rowValues]);
+        case RecordAction.Delete:
+          return this.db.query(`DELETE FROM \`${this.tableName}\` WHERE (${this.getDeleteSQL(rows)})`, [].concat.apply([], rowValues));
+        default:
+          throw new Error("Unknown record action: " + type);
+      }
+    } catch (err) {
+      const x = 1;
+      throw err;
     }
   }
 

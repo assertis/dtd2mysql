@@ -12,11 +12,6 @@ const TMP_PREFIX = "_tmp_";
  */
 export class MySQLTmpTable extends MySQLTable implements Table {
 
-  // TO-DO:
-  // 1. test it somehow ....
-  // 2. add feature switch to configuration
-  // 3. ....
-
   private readonly originalTableName;
   private tmpExists = false;
   private readonly isIncremental;
@@ -53,12 +48,6 @@ export class MySQLTmpTable extends MySQLTable implements Table {
    * overwrite original table with _tmp_ table data.
    */
   public async persist(): Promise<void> {
-    await Promise.all([
-      this.flush(RecordAction.Delete),
-      this.flush(RecordAction.Update),
-      this.flush(RecordAction.Insert)
-    ]);
-
     await this.truncateTable(this.originalTableName);
     await this.db.query('INSERT INTO `' + this.originalTableName + '` SELECT * FROM `' + this.tableName + '`');
     await this.db.query('DROP TABLE `' + this.tableName + '`');
@@ -68,7 +57,15 @@ export class MySQLTmpTable extends MySQLTable implements Table {
    * Drop tmp table and forget about it.
    */
   public async revert(): Promise<void> {
-    await this.db.query('DROP TABLE `' + this.tableName + '`');
+    await this.db.query('DROP TABLE IF EXISTS`' + this.tableName + '`');
+  }
+
+  public async flushAll(): Promise<void> {
+    await Promise.all([
+      this.flush(RecordAction.Delete),
+      this.flush(RecordAction.Update),
+      this.flush(RecordAction.Insert)
+    ]);
   }
 
   protected async createTmpTableIfNotExists(): Promise<void> {

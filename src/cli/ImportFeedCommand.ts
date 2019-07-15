@@ -17,16 +17,10 @@ import streamToPromise = require("stream-to-promise");
 const getExt = filename => path.extname(filename).slice(1).toUpperCase();
 const readFile = filename => byline.createStream(fs.createReadStream(filename, "utf8"));
 
-export interface ImportFeedCommandInterface {
-  run(argv: string[]): Promise<void>;
-  doImport(filePath: string): Promise<void>;
-  end(): Promise<void>;
-}
-
 /**
  * Imports one of the feeds
  */
-export class ImportFeedCommand implements CLICommand, ImportFeedCommandInterface {
+export class ImportFeedCommand implements CLICommand {
 
   private index: {[name: string]: MySQLTable} = {};
 
@@ -51,7 +45,7 @@ export class ImportFeedCommand implements CLICommand, ImportFeedCommandInterface
       console.error(err);
     }
 
-    return this.end();
+    return await this.end();
   }
 
   /**
@@ -83,8 +77,6 @@ export class ImportFeedCommand implements CLICommand, ImportFeedCommandInterface
     );
 
     await this.updateLastFile(zipName);
-
-
   }
 
   /**
@@ -176,9 +168,12 @@ export class ImportFeedCommand implements CLICommand, ImportFeedCommandInterface
   /**
    * Close the underling database connection
    */
-  public end(): Promise<void> {
-    Object.values(this.index).forEach(table => table.close());
-    return this.db.end();
+  public async end(): Promise<void> {
+    await Promise.all(
+      Object.values(this.index).map(table => table.close())
+    );
+
+    return await this.db.end();
   }
 
 }

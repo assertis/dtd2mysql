@@ -2,12 +2,14 @@ import * as chai from "chai";
 import { ImportFeedCommandWithFallback } from '../../src/cli/ImportFeedCommandWithFallback';
 import specification from '../../config/fares';
 import * as fs from 'fs';
+import { DownloadAndProcessInTransactionCommand } from '../../src/cli/DownloadAndProcessInTransactionCommand';
+import { FileProvider } from '../../src/cli/DownloadAndProcessCommand';
 
 /**
  * THIS IS NOT A UNIT TEST !!!!!
  * IT"S DISABLED (it.skip()) BY DEFAULT !!!!
  *
- * if you want to run it, remove all .skip() (so it will be like regular it("...", () => { ... }); ).
+ * if you want to run it, remove all .skip() (so it will be like regular it.skip("...", () => { ... }); ).
  * Please do not forget to set DATABASE_NAME environment variable.
  * It do not have default option to not override (corrupt) any database which is not
  * specified explicit. If you don't want to corrupt your local `fares` database, set it like:
@@ -18,25 +20,36 @@ import * as fs from 'fs';
  */
 describe("It should perform data update and persist results only in case of success", () => {
 
-  const db = require('mysql2/promise').createPool({
-    host: process.env.DATABASE_HOSTNAME || "localhost",
-    user: process.env.DATABASE_USERNAME || "root",
-    password: process.env.DATABASE_PASSWORD || null,
-    database: <string>process.env.DATABASE_NAME,
-    connectionLimit: 20,
-    multipleStatements: true
-  });
+  const getDb = () => {
+    return require('mysql2/promise').createPool({
+      host: process.env.DATABASE_HOSTNAME || "localhost",
+      user: process.env.DATABASE_USERNAME || "root",
+      password: process.env.DATABASE_PASSWORD || null,
+      database: <string>process.env.DATABASE_NAME,
+      connectionLimit: 20,
+      multipleStatements: true
+    })
+  };
 
   const fixturesDir = __dirname + "/../fixtures";
 
-  const getCommand = (): ImportFeedCommandWithFallback => {
+  const getCommand = (fileNames: string[]): DownloadAndProcessInTransactionCommand => {
     if (!process.env.DATABASE_NAME) {
       throw new Error("Please set the DATABASE_NAME environment variable.");
     }
 
     const tmpFolder = fixturesDir + "/fares/";
+    const db = getDb();
 
-    return new ImportFeedCommandWithFallback(db, specification, tmpFolder);
+    return new DownloadAndProcessInTransactionCommand(
+      {
+        async run(args: any[]): Promise<string[]> {
+          return fileNames;
+        }
+      } as FileProvider,
+      new ImportFeedCommandWithFallback(db, specification, tmpFolder),
+      db
+    );
   };
 
   afterEach(() => {
@@ -52,12 +65,12 @@ describe("It should perform data update and persist results only in case of succ
    * Only records described in feed will be affected.
    */
   it.skip("should persist data in database in case of successful import and do not overwrite existing data", async () => {
-    const command = getCommand();
-    const filePath = __dirname + "/../fixtures/RJFAC263_slim.ZIP";
+    const command = getCommand([fixturesDir + "/RJFAC263_slim.ZIP"]);
+    const db = getDb();
 
     await db.query(fs.readFileSync(fixturesDir + "/test_railcards.sql", 'utf8'));
 
-    await command.doImport(filePath);
+    await command.run([]);
 
     const [tmpTables] = await db.query("SHOW TABLES LIKE '_tmp_%'");
     chai.expect(tmpTables.length).equal(0);
@@ -72,12 +85,12 @@ describe("It should perform data update and persist results only in case of succ
    * Only records described in feed will remain.
    */
   it.skip("should persist data in database in case of successful import and overwrite existing data", async () => {
-    const command = getCommand();
-    const filePath = __dirname + "/../fixtures/RJFAF263_slim.ZIP";
+    const command = getCommand([fixturesDir + "/RJFAF263_slim.ZIP"]);
+    const db = getDb();
 
     await db.query(fs.readFileSync(fixturesDir + "/test_railcards.sql", 'utf8'));
 
-    await command.doImport(filePath);
+    await command.run([]);
 
     const [tmpTables] = await db.query("SHOW TABLES LIKE '_tmp_%'");
     chai.expect(tmpTables.length).equal(0);
@@ -93,14 +106,14 @@ describe("It should perform data update and persist results only in case of succ
    * (to keep data consistency).
    */
   it.skip("should not change data in database in case of failed import", async () => {
-    const command = getCommand();
-    const filePath = __dirname + "/../fixtures/RJFAC263_corrupted.ZIP";
+    const command = getCommand([fixturesDir + "/RJFAC263_corrupted.ZIP"]);
+    const db = getDb();
 
     await db.query(fs.readFileSync(fixturesDir + "/test_railcards.sql", 'utf8'));
     await db.query(fs.readFileSync(fixturesDir + "/test_tickets.sql", 'utf8'));
 
     try {
-      await command.doImport(filePath);
+      await command.run([]);
     } catch (err) {
       // do nothing - we expect error here.
       // just check below how it affected database state.
@@ -112,6 +125,26 @@ describe("It should perform data update and persist results only in case of succ
     chai.expect(railcardsImported[0].count).equal(1);
     const [ticketsImported] = await db.query("SELECT count(*) as 'count' FROM ticket_type");
     chai.expect(ticketsImported[0].count).equal(3);
+  });
+
+  it.skip("should write last persisted file name to database", async ()=> {
+    const command = getCommand([
+      fixturesDir + "/RJFAC263_slim.ZIP",
+      fixturesDir + "/RJFAC264_slim.ZIP"
+    ]);
+    const db = getDb();
+
+    await db.query("TRUNCATE log");
+    await db.query(fs.readFileSync(fixturesDir + "/test_railcards.sql", 'utf8'));
+    await db.query(fs.readFileSync(fixturesDir + "/test_tickets.sql", 'utf8'));
+
+    await command.run([]);
+
+    const [logs] = await db.query("SELECT count(*) as 'count' FROM log where filename LIKE 'RJFAC264%'");
+    chai.expect(logs[0].count).equal(1);
+
+    const [tmpTables] = await db.query("SHOW TABLES LIKE '_tmp_%'");
+    chai.expect(tmpTables.length).equal(0);
   });
 
 });

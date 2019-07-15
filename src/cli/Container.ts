@@ -1,6 +1,6 @@
 import * as memoize from "memoized-class-decorator";
 import {CLICommand} from "./CLICommand";
-import { ImportFeedCommand, ImportFeedCommandInterface } from "./ImportFeedCommand";
+import { ImportFeedCommand } from "./ImportFeedCommand";
 import {DatabaseConfiguration, DatabaseConnection} from "../database/DatabaseConnection";
 import config, {viewsSqlFactory} from "../../config";
 import {CleanFaresCommand} from "./CleanFaresCommand";
@@ -24,11 +24,11 @@ import {DownloadFileFromS3Command} from "./DownloadFileFromS3Command";
 import {idmsBucket, idmsFixedLinksFilename, idmsGroupFilename, idmsPrefix, idmsUrl} from "../../config/idms";
 import {ImportIdmsGroupCommand} from "./ImportIdmsGroupCommand";
 import {
-  OfflineDataProcessor,
-  temporaryDatabaseNameFactory
+  OfflineDataProcessor
 } from "../database/OfflineDataProcessor";
 import {CleanupDatabasesCommand} from "./CleanupDatabasesCommand";
-import { ImportFeedCommandWithFallback } from './ImportFeedCommandWithFallback';
+import { ImportFeedCommandWithFallback, ImportFeedInTransactionCommand } from './ImportFeedCommandWithFallback';
+import { DownloadAndProcessInTransactionCommand } from './DownloadAndProcessInTransactionCommand';
 
 export class Container {
 
@@ -70,7 +70,7 @@ export class Container {
       case "--get-fares":
         return this.getDownloadAndProcessCommand("/fares/", this.getFaresImportCommand());
       case "--get-fares-with-fallback":
-        return this.getDownloadAndProcessCommand("/fares/", this.getFaresImportCommandWithFallback());
+        return this.getDownloadAndProcessInTransactionCommand("/fares/", this.getFaresImportCommandWithFallback());
       case "--get-timetable":
         return this.getDownloadAndProcessCommand("/timetable/", this.getTimetableImportCommand());
       case "--get-routeing":
@@ -255,8 +255,17 @@ export class Container {
   }
 
   @memoize
-  private async getDownloadAndProcessCommand(path: string, importFeedProcess: Promise<ImportFeedCommandInterface>): Promise<DownloadAndProcessCommand> {
+  private async getDownloadAndProcessCommand(path: string, importFeedProcess: Promise<ImportFeedCommand>): Promise<DownloadAndProcessCommand> {
     return new DownloadAndProcessCommand(
+      await this.getDownloadCommand(path),
+      await importFeedProcess,
+      await this.getDatabaseConnection()
+    );
+  }
+
+  private async getDownloadAndProcessInTransactionCommand(path: string, importFeedProcess: Promise<ImportFeedInTransactionCommand>)
+  {
+    return new DownloadAndProcessInTransactionCommand(
       await this.getDownloadCommand(path),
       await importFeedProcess,
       await this.getDatabaseConnection()

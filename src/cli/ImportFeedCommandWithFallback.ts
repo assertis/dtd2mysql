@@ -13,17 +13,27 @@ import { MySQLStream, TableIndex } from "../database/MySQLStream";
 import byline = require("byline");
 import streamToPromise = require("stream-to-promise");
 import { MySQLTmpTable } from '../database/MySQLTmpTable';
-import { ImportFeedCommandInterface } from './ImportFeedCommand';
 
 const getExt = filename => path.extname(filename).slice(1).toUpperCase();
 const readFile = filename => byline.createStream(fs.createReadStream(filename, "utf8"));
 
+export interface ImportFeedInTransactionCommand {
+  doImport(filePaths: string[]): Promise<void>;
+
+  commit(): Promise<void>;
+
+  rollback(): Promise<void>;
+
+  end(): Promise<void>
+}
+
 /**
  * Imports one of the feeds
  */
-export class ImportFeedCommandWithFallback implements CLICommand, ImportFeedCommandInterface  {
+export class ImportFeedCommandWithFallback implements CLICommand, ImportFeedInTransactionCommand {
 
   private index: { [name: string]: MySQLTmpTable } = {};
+  private lastProcessedFile: string | null = null;
 
   constructor(
     protected readonly db: DatabaseConnection,
@@ -37,7 +47,7 @@ export class ImportFeedCommandWithFallback implements CLICommand, ImportFeedComm
    */
   public async run(argv: string[]): Promise<void> {
     try {
-      await this.doImport(argv[3]);
+      await this.doImport([argv[3]]);
     } catch (err) {
       console.error(err);
     }
@@ -48,7 +58,32 @@ export class ImportFeedCommandWithFallback implements CLICommand, ImportFeedComm
   /**
    * Extract the zip, set up the schema and do the inserts
    */
-  public async doImport(filePath: string): Promise<void> {
+  public async doImport(filePaths: string[]): Promise<void> {
+    for (const filePath of filePaths) {
+      await this.importSingleFile(filePath);
+    }
+
+    if (this.lastProcessedFile !== null) {
+      await this.updateLastFile(this.lastProcessedFile);
+    }
+  }
+
+  public async commit(): Promise<void> {
+    await Promise.all(
+      Object.values(this.index)
+            .map(table => table.persist())
+    );
+    console.log("Data persisted");
+  }
+
+  public async rollback(): Promise<void> {
+    await Promise.all(
+      Object.values(this.index).map(table => table.revert())
+    );
+    console.log("Import aborted!");
+  }
+
+  private async importSingleFile(filePath: string): Promise<void> {
     console.log(`Extracting ${filePath} to ${this.tmpFolder}`);
     fs.emptyDirSync(this.tmpFolder);
 
@@ -64,25 +99,14 @@ export class ImportFeedCommandWithFallback implements CLICommand, ImportFeedComm
       this.ensureALFExists(zipName.substring(0, zipName.length - 4));
     }
 
-    try {
-      await Promise.all(
-        fs.readdirSync(this.tmpFolder)
-          .filter(filename => this.getFeedFile(filename))
-          .map(filename => this.processFile(filename, isIncremental))
-      );
+    // no, we can't squeeze those 2 Promise.all() into single one.
+    await Promise.all(fs.readdirSync(this.tmpFolder)
+                        .filter(filename => this.getFeedFile(filename))
+                        .map(filename => this.writeFileData(filename, isIncremental)));
 
-      await Promise.all(
-        Object.values(this.index).map(table => table.persist())
-      );
-    } catch (err) {
-      await Promise.all(
-        Object.values(this.index).map(table => table.revert())
-      );
-      console.log("Error occurred during data import. Import aborted!");
-      throw err;
-    }
+    await Promise.all(Object.values(this.index).map(table => table.flushAll()));
 
-    await this.updateLastFile(zipName);
+    this.lastProcessedFile = zipName;
   }
 
   /**
@@ -110,7 +134,7 @@ export class ImportFeedCommandWithFallback implements CLICommand, ImportFeedComm
   /**
    * Process the records inside the given file
    */
-  private async processFile(filename: string, isIncremental: boolean): Promise<any> {
+  private async writeFileData(filename: string, isIncremental: boolean): Promise<any> {
     const file = this.getFeedFile(filename);
     const tables = await this.tables(file, isIncremental);
     const tableStream = new MySQLStream(filename, file, tables);
