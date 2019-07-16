@@ -208,12 +208,7 @@ export class Container {
   }
 
   private async getDownloadIdmsFileCommand(filename: string): Promise<DownloadFileFromS3Command | DownloadFileCommand> {
-    const command = process.env.S3_KEY
-      // Download via S3 API
-      ? new DownloadFileFromS3Command(await this.getS3(), idmsBucket, idmsPrefix + filename, filename)
-      // Download via HTTPS
-      : new DownloadFileCommand(idmsUrl + filename, filename);
-
+    const command = new DownloadFileFromS3Command(await this.getS3(), idmsBucket, idmsPrefix + filename, filename)
     return Promise.resolve(command);
   }
 
