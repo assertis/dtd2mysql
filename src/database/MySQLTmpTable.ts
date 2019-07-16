@@ -48,9 +48,22 @@ export class MySQLTmpTable extends MySQLTable implements Table {
    * overwrite original table with _tmp_ table data.
    */
   public async persist(): Promise<void> {
-    await this.truncateTable(this.originalTableName);
-    await this.db.query('INSERT INTO `' + this.originalTableName + '` SELECT * FROM `' + this.tableName + '`');
-    await this.db.query('DROP TABLE `' + this.tableName + '`');
+    console.log("persisting table " + this.tableName);
+    // to speed up table copying
+    await this.db.query('SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED');
+    try {
+      await this.db.query('START TRANSACTION');
+      await this.truncateTable(this.originalTableName);
+      await this.db.query('INSERT INTO `' + this.originalTableName + '` SELECT * FROM `' + this.tableName + '`');
+      await this.db.query('DROP TABLE `' + this.tableName + '`');
+      await this.db.query('COMMIT');
+    } catch (e) {
+      await this.db.query('ROLLBACK');
+      console.log("Persisting failed " + this.tableName);
+      throw e;
+    }
+    // revert to default InnoDB value.
+    await this.db.query('SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ');
   }
 
   /**
