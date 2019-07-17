@@ -1,11 +1,11 @@
-import {DatabaseConnection} from "./DatabaseConnection";
-import {ParsedRecord, RecordAction} from "../feed/record/Record";
+import { DatabaseConnection } from "./DatabaseConnection";
+import { ParsedRecord, RecordAction } from "../feed/record/Record";
 import { Table } from './Table';
 
 /**
  * Stateful class that provides access to a MySQL table and acts as buffer for inserts.
  */
-export class MySQLTable implements Table{
+export class MySQLTable implements Table {
 
   protected readonly buffer = {
     [RecordAction.Insert]: [] as ParsedRecord[],
@@ -17,7 +17,8 @@ export class MySQLTable implements Table{
     protected readonly db: DatabaseConnection,
     protected readonly tableName: string,
     protected readonly flushLimit: number = 5000
-  ) {}
+  ) {
+  }
 
   /**
    * This implementation persist records on the fly in apply() method.
@@ -78,12 +79,10 @@ export class MySQLTable implements Table{
   protected async queryWithRetry(type: RecordAction, rows: ParsedRecord[], numRetries: number = 3): Promise<void> {
     try {
       await this.query(type, rows);
-    }
-    catch (err) {
+    } catch (err) {
       if (err.errno === 1213 && numRetries > 0) {
         return this.queryWithRetry(type, rows, numRetries - 1);
-      }
-      else {
+      } else {
         throw err;
       }
     }
@@ -92,20 +91,15 @@ export class MySQLTable implements Table{
   protected query(type: RecordAction, rows: ParsedRecord[]): Promise<void> {
     const rowValues = rows.map(r => Object.values(r.values));
 
-    try {
-      switch (type) {
-        case RecordAction.Insert:
-          return this.db.query(`INSERT IGNORE INTO \`${this.tableName}\` VALUES ?`, [rowValues]);
-        case RecordAction.Update:
-          return this.db.query(`REPLACE INTO \`${this.tableName}\` VALUES ?`, [rowValues]);
-        case RecordAction.Delete:
-          return this.db.query(`DELETE FROM \`${this.tableName}\` WHERE (${this.getDeleteSQL(rows)})`, [].concat.apply([], rowValues));
-        default:
-          throw new Error("Unknown record action: " + type);
-      }
-    } catch (err) {
-      const x = 1;
-      throw err;
+    switch (type) {
+      case RecordAction.Insert:
+        return this.db.query(`INSERT IGNORE INTO \`${this.tableName}\` VALUES ?`, [rowValues]);
+      case RecordAction.Update:
+        return this.db.query(`REPLACE INTO \`${this.tableName}\` VALUES ?`, [rowValues]);
+      case RecordAction.Delete:
+        return this.db.query(`DELETE FROM \`${this.tableName}\` WHERE (${this.getDeleteSQL(rows)})`, [].concat.apply([], rowValues));
+      default:
+        throw new Error("Unknown record action: " + type);
     }
   }
 
