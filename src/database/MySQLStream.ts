@@ -23,7 +23,9 @@ export class MySQLStream extends Writable {
         const valuesRaw = record.extractValues(line);
         const values: ParsedRecord[] = Array.isArray(valuesRaw) ? valuesRaw : [valuesRaw];
 
-        values.forEach(async value => await table.apply(value));
+        await Promise.all(
+          values.map(value => table.apply(value))
+        );
       }
 
       callback();
