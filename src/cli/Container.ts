@@ -1,34 +1,36 @@
 import * as memoize from "memoized-class-decorator";
-import {CLICommand} from "./CLICommand";
+import { CLICommand } from "./CLICommand";
 import { ImportFeedCommand } from "./ImportFeedCommand";
-import {DatabaseConfiguration, DatabaseConnection} from "../database/DatabaseConnection";
-import config, {viewsSqlFactory} from "../../config";
-import {CleanFaresCommand} from "./CleanFaresCommand";
-import {ShowHelpCommand} from "./ShowHelpCommand";
-import {OutputGTFSCommand} from "./OutputGTFSCommand";
-import {CIFRepository} from "../gtfs/repository/CIFRepository";
-import {stationCoordinates} from "../../config/gtfs/station-coordinates";
-import {FileOutput} from "../gtfs/output/FileOutput";
-import {GTFSOutput} from "../gtfs/output/GTFSOutput";
-import {OutputGTFSZipCommand} from "./OutputGTFSZipCommand";
-import {DownloadCommand} from "./DownloadCommand";
-import {DownloadAndProcessCommand} from "./DownloadAndProcessCommand";
-import {GTFSImportCommand} from "./GTFSImportCommand";
-import {nfm64DownloadUrl} from "../../config/nfm64";
-import {DownloadFileCommand} from "./DownloadFileCommand";
-import {PromiseSFTP} from "../sftp/PromiseSFTP";
-import {ImportIdmsFixedLinksCommand} from "./ImportIdmsFixedLinksCommand";
+import { DatabaseConfiguration, DatabaseConnection } from "../database/DatabaseConnection";
+import config, { viewsSqlFactory } from "../../config";
+import { CleanFaresCommand } from "./CleanFaresCommand";
+import { ShowHelpCommand } from "./ShowHelpCommand";
+import { OutputGTFSCommand } from "./OutputGTFSCommand";
+import { CIFRepository } from "../gtfs/repository/CIFRepository";
+import { stationCoordinates } from "../../config/gtfs/station-coordinates";
+import { FileOutput } from "../gtfs/output/FileOutput";
+import { GTFSOutput } from "../gtfs/output/GTFSOutput";
+import { OutputGTFSZipCommand } from "./OutputGTFSZipCommand";
+import { DownloadCommand } from "./DownloadCommand";
+import { DownloadAndProcessCommand } from "./DownloadAndProcessCommand";
+import { GTFSImportCommand } from "./GTFSImportCommand";
+import { nfm64DownloadUrl } from "../../config/nfm64";
+import { DownloadFileCommand } from "./DownloadFileCommand";
+import { PromiseSFTP } from "../sftp/PromiseSFTP";
+import { ImportIdmsFixedLinksCommand } from "./ImportIdmsFixedLinksCommand";
 import * as AWS from 'aws-sdk';
 import * as proxy from "proxy-agent";
-import {DownloadFileFromS3Command} from "./DownloadFileFromS3Command";
-import {idmsBucket, idmsFixedLinksFilename, idmsGroupFilename, idmsPrefix, idmsUrl} from "../../config/idms";
-import {ImportIdmsGroupCommand} from "./ImportIdmsGroupCommand";
+import { DownloadFileFromS3Command } from "./DownloadFileFromS3Command";
+import { idmsBucket, idmsFixedLinksFilename, idmsGroupFilename, idmsPrefix, idmsUrl } from "../../config/idms";
+import { ImportIdmsGroupCommand } from "./ImportIdmsGroupCommand";
 import {
   OfflineDataProcessor
 } from "../database/OfflineDataProcessor";
-import {CleanupDatabasesCommand} from "./CleanupDatabasesCommand";
+import { CleanupDatabasesCommand } from "./CleanupDatabasesCommand";
 import { ImportFeedTransactionalCommand, ImportFeedTransactionalCommandInterface } from './ImportFeedTransactionalCommand';
 import { DownloadAndProcessInTransactionCommand } from './DownloadAndProcessInTransactionCommand';
+import { BackupDatabaseCommand } from './BackupDatabaseCommand';
+import { S3Storage } from '../backup/S3Storage';
 
 export class Container {
 
@@ -83,16 +85,29 @@ export class Container {
         return this.getDownloadAndProcessIdmsGroupCommand();
       case "--clean-databases":
         return this.getCleanupDatabasesCommand();
+      case "--backup-fares":
+        return this.getBackupDatabaseCommand('fares');
       default:
         return this.getShowHelpCommand();
     }
   }
 
   @memoize
+  public async getBackupDatabaseCommand(databaseName: string): Promise<BackupDatabaseCommand> {
+    return new BackupDatabaseCommand(
+      databaseName,
+      process.env.DATABASE_USERNAME || "root",
+      process.env.DATABASE_PASSWORD || "",
+      process.env.DATABASE_HOSTNAME || "localhost",
+      new S3Storage(await this.getS3(), ""),
+    );
+  }
+
+  @memoize
   public async getCleanupDatabasesCommand(): Promise<CleanupDatabasesCommand> {
     return new CleanupDatabasesCommand(
-        this.getDatabaseConnection(),
-        new OfflineDataProcessor(process.env.DATABASE_NAME || "", this.databaseConfiguration)
+      this.getDatabaseConnection(),
+      new OfflineDataProcessor(process.env.DATABASE_NAME || "", this.databaseConfiguration)
     );
   }
 
@@ -227,7 +242,7 @@ export class Container {
     return this.getDownloadIdmsFileCommand(idmsGroupFilename);
   }
 
-  private async getS3(): Promise<AWS.S3> {
+  public async getS3(): Promise<AWS.S3> {
     const key = process.env.S3_KEY;
     const secret = process.env.S3_SECRET;
     const region = process.env.S3_REGION || 'eu-west-1';
@@ -248,7 +263,7 @@ export class Container {
     }
 
     if (proxyUrl) {
-      config.httpOptions = {agent: proxy(proxyUrl)};
+      config.httpOptions = { agent: proxy(proxyUrl) };
     }
 
     return new AWS.S3(config);
@@ -263,8 +278,7 @@ export class Container {
     );
   }
 
-  private async getDownloadAndProcessInTransactionCommand(path: string, importFeedProcess: Promise<ImportFeedTransactionalCommandInterface>)
-  {
+  private async getDownloadAndProcessInTransactionCommand(path: string, importFeedProcess: Promise<ImportFeedTransactionalCommandInterface>) {
     return new DownloadAndProcessInTransactionCommand(
       await this.getDownloadCommand(path),
       await importFeedProcess,
