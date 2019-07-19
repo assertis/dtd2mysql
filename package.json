@@ -17,7 +17,7 @@
     "gtfs-import": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --gtfs-import",
     "gtfs-zip": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --gtfs-zip",
     "dataVersion": "ts-node ./src/dataVersion.ts",
-    "dev": "ts-node ./src/dev.ts",
+    "dev": "ts-node ./src/dev.ts"
   },
   "repository": {
     "type": "git",
