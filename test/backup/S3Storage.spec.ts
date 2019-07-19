@@ -28,7 +28,7 @@ describe("Some tests to verify s3 storage behaviour", () => {
     const bucket = 'assertis-test-bucket';
     const storage = new S3Storage(s3, bucket);
 
-    // make sure our test bucket exists and is empty.
+    // make sure our test bucket exists and do not contain test file.
     const resultTrue = await storage.doesBucketExists(bucket);
     chai.expect(resultTrue).to.be.eq(true);
 
@@ -40,9 +40,11 @@ describe("Some tests to verify s3 storage behaviour", () => {
       // do nothing....
     }
     chai.expect(await fileExistsInBucket(bucket, testFileName)).to.be.equal(false);
+
     // upload something
     await storage.persist(__dirname + "/../fixtures/" + testFileName);
 
+    // check if file is in bucket
     chai.expect(await fileExistsInBucket(bucket, testFileName)).to.be.equal(true);
   }).timeout(10000);
 

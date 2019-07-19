@@ -94,12 +94,16 @@ export class Container {
 
   @memoize
   public async getBackupDatabaseCommand(databaseName: string): Promise<BackupDatabaseCommand> {
+    const bucketName = process.env.BUCKET_NAME || "";
+    if (bucketName.length === 0) {
+      throw new Error("Please set BUCKET_NAME variable");
+    }
     return new BackupDatabaseCommand(
       databaseName,
       process.env.DATABASE_USERNAME || "root",
       process.env.DATABASE_PASSWORD || "",
       process.env.DATABASE_HOSTNAME || "localhost",
-      new S3Storage(await this.getS3(), ""),
+      new S3Storage(await this.getS3(), bucketName),
     );
   }
 

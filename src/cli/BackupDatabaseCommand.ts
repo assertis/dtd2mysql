@@ -16,12 +16,14 @@ export class BackupDatabaseCommand implements CLICommand {
   }
 
   public async run(argv: string[]): Promise<any> {
-    if (await this.isBackupable()) {
-      const backupFileName = await this.doBackup();
-      await this.persistBackup(backupFileName);
+    if (!await this.isBackupable()) {
+      throw new Error("Backup tool not available");
     }
 
-    throw new Error("Backup tool not available");
+    console.log("dumping database " + this.databaseName);
+    const backupFileName = await this.doBackup();
+    console.log("pushing dump into storage");
+    await this.persistBackup(backupFileName);
   }
 
   protected async isBackupable(): Promise<boolean> {
@@ -35,7 +37,7 @@ export class BackupDatabaseCommand implements CLICommand {
   }
 
   protected async doBackup(): Promise<string> {
-    const backupFileName = "/tmp/" + this.databaseName + "_dump_" + new Date().toDateString() + ".sql";
+    const backupFileName = "/tmp/" + this.databaseName + "_dump_" + new Date().toISOString() + ".sql";
     const command = "mysqldump -u " + this.username +
       " --password=" + this.password +
       " -h " + this.host +
