@@ -254,12 +254,12 @@ export class Container {
     const debug = process.env.DEBUG;
 
     if (!key || !secret) {
-      throw new Error('S3_KEY and S3_SECRET environment variables need to be set in order to download IDMS data');
+      console.warn('S3_KEY and S3_SECRET are not set. If server do not have access to S3, process will fail!');
     }
 
     const config: AWS.S3.Types.ClientConfiguration = {
       region: region,
-      credentials: new AWS.Credentials(key, secret),
+      credentials: new AWS.Credentials(key || '', secret || ''),
     };
 
     if (debug) {
