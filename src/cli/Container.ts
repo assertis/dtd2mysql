@@ -252,15 +252,19 @@ export class Container {
     const region = process.env.S3_REGION || 'eu-west-1';
     const proxyUrl = process.env.S3_PROXY;
     const debug = process.env.DEBUG;
+    const hasCredentials = !!(key && secret);
 
-    if (!key || !secret) {
-      console.warn('S3_KEY and S3_SECRET are not set. If server do not have access to S3, process will fail!');
+    if (!hasCredentials) {
+      console.warn('S3_KEY or S3_SECRET is not set. If server do not have access to S3, process will fail!');
     }
 
     const config: AWS.S3.Types.ClientConfiguration = {
       region: region,
-      credentials: new AWS.Credentials(key || '', secret || ''),
     };
+
+    if (hasCredentials) {
+      config.credentials = new AWS.Credentials(key || '', secret || '');
+    }
 
     if (debug) {
       config.logger = console;
