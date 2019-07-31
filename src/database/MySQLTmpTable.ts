@@ -54,7 +54,7 @@ export class MySQLTmpTable extends MySQLTable implements Table {
     try {
       await this.db.query('START TRANSACTION');
       await this.truncateTable(this.originalTableName);
-      await this.db.query('INSERT INTO `' + this.originalTableName + '` SELECT * FROM `' + this.tableName + '`');
+      await this.db.query('INSERT IGNORE INTO `' + this.originalTableName + '` SELECT * FROM `' + this.tableName + '`');
       await this.db.query('DROP TABLE `' + this.tableName + '`');
       await this.db.query('COMMIT');
     } catch (e) {
