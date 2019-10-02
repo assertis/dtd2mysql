@@ -1,7 +1,8 @@
 import {Writable} from "stream";
 import {FeedFile} from "../feed/file/FeedFile";
-import {ParsedRecord} from "../feed/record/Record";
-import { Table } from './Table';
+import {ParsedRecord, RecordAction} from "../feed/record/Record";
+import {Table} from './Table';
+import {RecordWithManualIdentifier} from "../feed/record/FixedWidthRecord";
 
 export class MySQLStream extends Writable {
 
@@ -23,6 +24,18 @@ export class MySQLStream extends Writable {
         const valuesRaw = record.extractValues(line);
         const values: ParsedRecord[] = Array.isArray(valuesRaw) ? valuesRaw : [valuesRaw];
 
+        if (this.isRecordWithPreUpdateScript(record)) {
+          const preUpdateScripts: Promise<any>[] = [];
+
+          values.forEach((value: ParsedRecord) => {
+            if (value.action === RecordAction.Update) {
+              preUpdateScripts.push(...record.preUpdateScript(value, this.tables));
+            }
+          });
+
+          await Promise.all(preUpdateScripts);
+        }
+
         await Promise.all(
           values.map(value => table.apply(value))
         );
@@ -34,7 +47,11 @@ export class MySQLStream extends Writable {
       callback(Error(`Error processing ${this.filename} with data ${line}` + err.stack));
     }
   }
-  
+
+  private isRecordWithPreUpdateScript(value: any): value is RecordWithManualIdentifier {
+    return value.preUpdateScript !== undefined;
+  }
+
   public async close(): Promise<void> {
     await Promise.all(Object.values(this.tables).map(t => t.close()));
   }

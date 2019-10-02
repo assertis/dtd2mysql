@@ -1,6 +1,6 @@
 import AdmZip = require("adm-zip");
 import {CLICommand} from "./CLICommand";
-import {FeedConfig, viewsSqlFactory} from "../../config";
+import {FeedConfig} from "../../config";
 import {FeedFile} from "../feed/file/FeedFile";
 import {MySQLSchema} from "../database/MySQLSchema";
 import {DatabaseConnection} from "../database/DatabaseConnection";
@@ -13,6 +13,7 @@ import {RecordWithManualIdentifier} from "../feed/record/FixedWidthRecord";
 import {MySQLStream, TableIndex} from "../database/MySQLStream";
 import byline = require("byline");
 import streamToPromise = require("stream-to-promise");
+import {ScheduleIdMap} from "./ScheduleIdMap";
 
 const getExt = filename => path.extname(filename).slice(1).toUpperCase();
 const readFile = filename => byline.createStream(fs.createReadStream(filename, "utf8"));
@@ -23,12 +24,15 @@ const readFile = filename => byline.createStream(fs.createReadStream(filename, "
 export class ImportFeedCommand implements CLICommand {
 
   private index: {[name: string]: MySQLTable} = {};
+  private scheduleIdMap: ScheduleIdMap;
 
   constructor(
     protected readonly db: DatabaseConnection,
     protected readonly files: FeedConfig,
     protected readonly tmpFolder: string
-  ) { }
+  ) {
+    this.scheduleIdMap = new ScheduleIdMap(this.db);
+  }
 
   protected get fileArray(): FeedFile[] {
     return Object.values(this.files);
@@ -59,16 +63,23 @@ export class ImportFeedCommand implements CLICommand {
 
     const zipName = path.basename(filePath);
 
+    const isIncrementalUpdate = zipName.charAt(4) === "C";
+    const isCfaLoaded = this.files["CFA"] instanceof MultiRecordFile;
+
     // if the file is a not an incremental, reset the database schema
-    if (zipName.charAt(4) !== "C") {
+    if (!isIncrementalUpdate) {
       await Promise.all(this.fileArray.map(file => this.setupSchema(file)));
       await this.createLastProcessedSchema();
     }
 
-    if (this.files["CFA"] instanceof MultiRecordFile) {
+    if (isCfaLoaded) {
       await this.setLastScheduleId();
       this.ensureALFExists(zipName.substring(0, zipName.length - 4));
     }
+
+    if (isIncrementalUpdate && isCfaLoaded) {
+      await this.loadScheduleIdMap();
+     }
 
     await Promise.all(
       fs.readdirSync(this.tmpFolder)
@@ -109,7 +120,14 @@ export class ImportFeedCommand implements CLICommand {
     const cfaFile = this.files["CFA"] as MultiRecordFile;
     const bsRecord = cfaFile.records["BS"] as RecordWithManualIdentifier;
 
-    bsRecord.lastId = lastId;
+    bsRecord.setLastId(lastId);
+  }
+
+  private async loadScheduleIdMap(): Promise<void> {
+    const cfaFile = this.files["CFA"] as MultiRecordFile;
+    const bsRecord = cfaFile.records["BS"] as RecordWithManualIdentifier;
+
+    bsRecord.setScheduleIdMap(await this.scheduleIdMap.load());
   }
 
   private ensureALFExists(filename): void {
@@ -142,17 +160,14 @@ export class ImportFeedCommand implements CLICommand {
     }
   }
 
-  @memoize
   private getFeedFile(filename: string): FeedFile {
     return this.files[getExt(filename)];
   }
 
-  @memoize
   private schemas(file: FeedFile): MySQLSchema[] {
     return file.recordTypes.map(record => new MySQLSchema(this.db, record));
   }
 
-  @memoize
   protected async tables(file: FeedFile): Promise<TableIndex> {
     for (const record of file.recordTypes) {
       if (!this.index[record.name]) {

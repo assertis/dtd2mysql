@@ -1,6 +1,6 @@
-import { DatabaseConnection } from "./DatabaseConnection";
-import { ParsedRecord, RecordAction } from "../feed/record/Record";
-import { Table } from './Table';
+import {DatabaseConnection} from "./DatabaseConnection";
+import {ParsedRecord, RecordAction} from "../feed/record/Record";
+import {Table} from './Table';
 
 /**
  * Stateful class that provides access to a MySQL table and acts as buffer for inserts.
@@ -53,6 +53,11 @@ export class MySQLTable implements Table {
 
     if (rows.length > 0) {
       this.buffer[type] = [];
+
+      // Deletes must run before inserts.
+      if (type !== RecordAction.Delete) {
+        this.flush(RecordAction.Delete);
+      }
 
       return this.queryWithRetry(type, rows);
     }
@@ -108,4 +113,3 @@ export class MySQLTable implements Table {
   }
 
 }
-

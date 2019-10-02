@@ -28,7 +28,11 @@ export interface ImportFeedTransactionalCommandInterface {
 }
 
 /**
- * Imports one of the feeds
+ * Imports one of the feeds in a transactional manner
+ *
+ * THIS DOES NOT HANDLE TIMETABLE UPDATES CORRECTLY. PLEASE DO NOT USE FOR TIMETABLE IMPORTS.
+ * The reason for that is that ImportFeedCommand has extra handling for the multi-row complex records
+ * that schedules need from https://awesomeboard.atlassian.net/browse/JP-638.
  */
 export class ImportFeedTransactionalCommand implements CLICommand, ImportFeedTransactionalCommandInterface {
 
@@ -118,7 +122,7 @@ export class ImportFeedTransactionalCommand implements CLICommand, ImportFeedTra
     const cfaFile = this.files["CFA"] as MultiRecordFile;
     const bsRecord = cfaFile.records["BS"] as RecordWithManualIdentifier;
 
-    bsRecord.lastId = lastId;
+    bsRecord.setLastId(lastId);
   }
 
   private ensureALFExists(filename): void {

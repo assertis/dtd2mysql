@@ -37,6 +37,10 @@ export abstract class Field {
     return this.parse(value);
   }
 
+  public extractFrom(line: string): FieldValue {
+    return this.extract(line.substr(this.position, this.length));
+  }
+
   protected abstract parse(value: string): FieldValue;
 
 }

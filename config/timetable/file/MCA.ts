@@ -1,16 +1,11 @@
-
 import {FixedWidthRecord, RecordWithManualIdentifier} from "../../../src/feed/record/FixedWidthRecord";
-import {TextField, VariableLengthText} from "../../../src/feed/field/TextField";
+import {BooleanField, ForeignKeyField, IntField, ShortDateField, TextField, TimeField, VariableLengthText} from "../../../src/feed/field";
 import {MultiRecordFile} from "../../../src/feed/file/MultiRecordFile";
-import {BooleanField} from "../../../src/feed/field/BooleanField";
-import {ShortDateField} from "../../../src/feed/field/DateField";
-import {IntField} from "../../../src/feed/field/IntField";
-import {ForeignKeyField} from "../../../src/feed/field/ForeignKeyField";
-import {TimeField} from "../../../src/feed/field/TimeField";
 import {MultiFormatRecord} from "../../../src/feed/record/MultiFormatRecord";
-import {RecordAction} from "../../../src/feed/record/Record";
+import {ParsedRecord, RecordAction} from "../../../src/feed/record/Record";
+import {TableIndex} from "../../../src/database/MySQLStream";
 
-const tiplocInsert = new FixedWidthRecord(
+export const tiplocInsert = new FixedWidthRecord(
   "tiploc",
   ["tiploc_code"], {
     "tiploc_code": new TextField(2, 7),
@@ -26,7 +21,7 @@ const tiplocInsert = new FixedWidthRecord(
   ["crs_code"]
 );
 
-const association = new FixedWidthRecord(
+export const association = new FixedWidthRecord(
   "association",
   ["base_uid", "assoc_uid", "assoc_location", "start_date", "stp_indicator"], {
     "base_uid": new TextField(3, 6),
@@ -57,7 +52,7 @@ const association = new FixedWidthRecord(
   2
 );
 
-const schedule = new RecordWithManualIdentifier(
+export const schedule = new RecordWithManualIdentifier(
   "schedule",
   ["train_uid", "runs_from", "stp_indicator"], {
     "train_uid": new TextField(3, 6),
@@ -96,12 +91,20 @@ const schedule = new RecordWithManualIdentifier(
     "R": RecordAction.Update,
     "D": RecordAction.Delete
   },
-  2
+  2,
+  false,
+  (record: ParsedRecord, tables: TableIndex): Promise<any>[] => {
+    return [
+      tables["schedule_extra"].apply({action: RecordAction.Delete, values: {"schedule": record.values["id"]}}),
+      tables["stop_time"].apply({action: RecordAction.Delete, values: {"schedule": record.values["id"]}}),
+    ];
+  }
 );
 
-const extraDetails = new FixedWidthRecord(
+export const extraDetails = new FixedWidthRecord(
   "schedule_extra",
-  [], {
+  ["schedule"],
+  {
     "schedule": new ForeignKeyField(schedule),
     "traction_class": new TextField(2, 4, true),
     "uic_code": new TextField(6, 5, true),
@@ -110,7 +113,7 @@ const extraDetails = new FixedWidthRecord(
     "retail_train_id": new TextField(14, 8, true),
     "source": new TextField(22, 1, true)
   },
-  ["schedule"]
+  []
 );
 
 const stopRecordTypes = {
@@ -167,9 +170,9 @@ const stopRecordTypes = {
   }
 };
 
-const stop = new MultiFormatRecord(
+export const callingPoint = new MultiFormatRecord(
   "stop_time",
-  ["schedule", "location", "suffix",  "public_departure_time"],
+  ["schedule", "location", "suffix", "public_departure_time"],
   stopRecordTypes.LI,
   stopRecordTypes,
   0,
@@ -185,9 +188,9 @@ const MCA = new MultiRecordFile({
   "TA": tiplocInsert,
   "BS": schedule,
   "BX": extraDetails,
-  "LO": stop,
-  "LI": stop,
-  "LT": stop
+  "LO": callingPoint,
+  "LI": callingPoint,
+  "LT": callingPoint
 }, 0, 2);
 
 export default MCA;

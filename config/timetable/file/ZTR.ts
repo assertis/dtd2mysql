@@ -1,13 +1,7 @@
-
 import {RecordWithManualIdentifier} from "../../../src/feed/record/FixedWidthRecord";
-import {TextField, VariableLengthText} from "../../../src/feed/field/TextField";
+import {BooleanField, ForeignKeyField, ShortDateField, TextField, TimeField, VariableLengthText} from "../../../src/feed/field";
 import {MultiRecordFile} from "../../../src/feed/file/MultiRecordFile";
-import {BooleanField} from "../../../src/feed/field/BooleanField";
-import {ShortDateField} from "../../../src/feed/field/DateField";
-import {ForeignKeyField} from "../../../src/feed/field/ForeignKeyField";
-import {TimeField} from "../../../src/feed/field/TimeField";
 import {MultiFormatRecord} from "../../../src/feed/record/MultiFormatRecord";
-
 
 const schedule = new RecordWithManualIdentifier(
   "z_schedule",
@@ -106,7 +100,6 @@ const stop = new MultiFormatRecord(
   [],
   true
 );
-
 
 const ZTR = new MultiRecordFile({
   "BS": schedule,
