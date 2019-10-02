@@ -25,7 +25,7 @@ export class CIFRepository {
    * Return the interchange time between each station
    */
   public async getTransfers(): Promise<Transfer[]> {
-    let [results] = await this.db.query<Transfer[]>(`
+    const [results] = await this.db.query<Transfer[]>(`
       SELECT 
         crs_code AS from_stop_id, 
         crs_code AS to_stop_id, 
@@ -35,10 +35,7 @@ export class CIFRepository {
       GROUP BY crs_code
     `);
 
-    results = results.map(transfer => {
-        return this.getOverwrittenTransfer(transfer);
-    });
-    return results;
+    return results.map(transfer => this.getOverwrittenTransfer(transfer));
   }
 
   /**
