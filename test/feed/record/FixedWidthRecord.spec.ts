@@ -1,8 +1,5 @@
-
 import * as chai from "chai";
-import {IntField} from "../../../src/feed/field/IntField";
-import {TextField} from "../../../src/feed/field/TextField";
-import {DateField} from "../../../src/feed/field/DateField";
+import {DateField, IntField, TextField} from "../../../src/feed/field";
 import {FixedWidthRecord, RecordWithManualIdentifier} from "../../../src/feed/record/FixedWidthRecord";
 import {RecordAction} from "../../../src/feed/record/Record";
 
@@ -23,6 +20,7 @@ describe("FixedWidthRecord", () => {
 
     chai.expect(record.extractValues("1012Hi 31122999")).to.deep.equal({
       action: RecordAction.Insert,
+      keysValues: {},
       values: {
         id: null,
         field: 1012,
@@ -45,6 +43,7 @@ describe("FixedWidthRecord", () => {
 
     chai.expect(record.extractValues("1012Hi 31122999")).to.deep.equal({
       action: RecordAction.Insert,
+      keysValues: {},
       values: {
         id: null,
         field: 1012,
@@ -77,14 +76,24 @@ describe("FixedWidthRecord", () => {
 
     chai.expect(record.extractValues("D1012Hi 31122999")).to.deep.equal({
       action: RecordAction.Delete,
-      values: {
+      keysValues: {
         field: 1012,
         field2: "Hi "
+      },
+      values: {
+        id: null,
+        field: 1012,
+        field2: "Hi ",
+        field3: "2999-12-31"
       }
     });
 
     chai.expect(record.extractValues("A1012Hi 31122999")).to.deep.equal({
       action: RecordAction.Update,
+      keysValues: {
+        field: 1012,
+        field2: "Hi "
+      },
       values: {
         id: null,
         field: 1012,
@@ -112,6 +121,7 @@ describe("RecordWithManualIdentifier", () => {
 
     chai.expect(record.extractValues("1012Hi 31122999")).to.deep.equal({
       action: RecordAction.Insert,
+      keysValues: {},
       values: {
         id: 1,
         field: 1012,
@@ -134,6 +144,7 @@ describe("RecordWithManualIdentifier", () => {
 
     chai.expect(record.extractValues("1012Hi 31122999")).to.deep.equal({
       action: RecordAction.Insert,
+      keysValues: {},
       values: {
         id: 1,
         field: 1012,
@@ -143,6 +154,7 @@ describe("RecordWithManualIdentifier", () => {
 
     chai.expect(record.extractValues("1012Hi 31122999")).to.deep.equal({
       action: RecordAction.Insert,
+      keysValues: {},
       values: {
         id: 2,
         field: 1012,
@@ -152,6 +164,7 @@ describe("RecordWithManualIdentifier", () => {
 
     chai.expect(record.extractValues("1012Hi 31122999")).to.deep.equal({
       action: RecordAction.Insert,
+      keysValues: {},
       values: {
         id: 3,
         field: 1012,

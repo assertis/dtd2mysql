@@ -21,7 +21,7 @@ export class DownloadCommand implements CLICommand {
       this.getLastProcessedFile()
     ]);
 
-    const files = this.getFilesToProcess(remoteFiles, lastProcessedFile);
+    const files = this.getFilesToProcess(remoteFiles, undefined);
 
     if (files.length > 0) {
       console.log(`Downloading ${files.length} feed file(s)`);
@@ -30,14 +30,14 @@ export class DownloadCommand implements CLICommand {
       console.log("No files to update. Last processed file => ", lastProcessedFile);
     }
 
-    try {
-      await Promise.all(
-        files.map(f => this.sftp.fastGet(this.directory + f, outputDirectory + f))
-      );
-    }
-    catch (err) {
-      console.error(err);
-    }
+    // try {
+    //   await Promise.all(
+    //     files.map(f => this.sftp.fastGet(this.directory + f, outputDirectory + f))
+    //   );
+    // }
+    // catch (err) {
+    //   console.error(err);
+    // }
 
     this.sftp.end();
 

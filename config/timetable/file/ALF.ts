@@ -98,7 +98,7 @@ export class ALFRecord implements Record {
 
     }
 
-    return { action, values };
+    return { action, values, keysValues: values };
   }
 
 }
