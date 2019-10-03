@@ -1,9 +1,6 @@
-
 import * as chai from "chai";
-import {DoubleField} from "../../../src/feed/field/DoubleField";
-import {TextField} from "../../../src/feed/field/TextField";
+import {DateField, DoubleField, TextField} from "../../../src/feed/field";
 import {CSVRecord} from "../../../src/feed/record/CSVRecord";
-import {DateField} from "../../../src/feed/field/DateField";
 import {RecordAction} from "../../../src/feed/record/Record";
 
 describe("CSVRecord", () => {
@@ -19,10 +16,11 @@ describe("CSVRecord", () => {
         "field": field,
         "field2": field2,
         "field3": field3
-    });
+      });
 
     chai.expect(record.extractValues("10.12,Hi ,31122999")).to.deep.equal({
       action: RecordAction.Insert,
+      keysValues: {},
       values: {
         id: null,
         field: 10.12,
@@ -45,6 +43,7 @@ describe("CSVRecord", () => {
 
     chai.expect(record.extractValues("10.12,Hi ,31122999")).to.deep.equal({
       action: RecordAction.Insert,
+      keysValues: {},
       values: {
         id: null,
         field: 10.12,

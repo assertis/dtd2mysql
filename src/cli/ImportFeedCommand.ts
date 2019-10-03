@@ -1,6 +1,6 @@
 import AdmZip = require("adm-zip");
 import {CLICommand} from "./CLICommand";
-import {FeedConfig, viewsSqlFactory} from "../../config";
+import {FeedConfig} from "../../config";
 import {FeedFile} from "../feed/file/FeedFile";
 import {MySQLSchema} from "../database/MySQLSchema";
 import {DatabaseConnection} from "../database/DatabaseConnection";
@@ -76,6 +76,10 @@ export class ImportFeedCommand implements CLICommand {
         .map(filename => this.processFile(filename))
     );
 
+    if (this.files["CFA"] instanceof MultiRecordFile) {
+      await this.removeOrphanStopTimes();
+    }
+
     await this.updateLastFile(zipName);
   }
 
@@ -110,6 +114,13 @@ export class ImportFeedCommand implements CLICommand {
     const bsRecord = cfaFile.records["BS"] as RecordWithManualIdentifier;
 
     bsRecord.lastId = lastId;
+  }
+
+  private async removeOrphanStopTimes() {
+    return Promise.all([
+      this.db.query("DELETE FROM stop_time WHERE schedule NOT IN (SELECT id FROM schedule)"),
+      this.db.query("DELETE FROM schedule_extra WHERE schedule NOT IN (SELECT id FROM schedule)")
+    ]);
   }
 
   private ensureALFExists(filename): void {
