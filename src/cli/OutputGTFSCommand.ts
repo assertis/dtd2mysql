@@ -32,16 +32,16 @@ export class OutputGTFSCommand implements CLICommand {
       throw new Error(`Output path ${this.baseDir} does not exist.`);
     }
 
-    const associationsP = this.repository.getAssociations();
-    const scheduleResultsP = this.repository.getSchedules();
+    const agencyP = this.copy(agencies, "agency.txt");
     const transfersP = this.copy(this.repository.getTransfers(), "transfers.txt");
     const stopsP = this.copy(this.repository.getStops(), "stops.txt");
-    const agencyP = this.copy(agencies, "agency.txt");
     const fixedLinksP = this.copy(this.repository.getFixedLinks(), "links.txt");
 
+    const associationsP = this.repository.getAssociations();
+    const scheduleResultsP = this.repository.getSchedules();
     const schedules = this.getSchedules(await associationsP, await scheduleResultsP);
-    const [calendars, calendarDates, serviceIds] = createCalendar(schedules);
 
+    const [calendars, calendarDates, serviceIds] = createCalendar(schedules);
     const calendarP = this.copy(calendars, "calendar.txt");
     const calendarDatesP = this.copy(calendarDates, "calendar_dates.txt");
     const tripsP = this.copyTrips(schedules, serviceIds);
@@ -111,9 +111,8 @@ export class OutputGTFSCommand implements CLICommand {
     const processedSchedules = <ScheduleIndex>applyOverlays(scheduleResults.schedules, scheduleResults.idGenerator);
     const associatedSchedules = applyAssociations(processedSchedules, processedAssociations, scheduleResults.idGenerator);
     const mergedSchedules = <Schedule[]>mergeSchedules(associatedSchedules);
-    const schedules = addLateNightServices(mergedSchedules, scheduleResults.idGenerator);
 
-    return schedules;
+    return addLateNightServices(mergedSchedules, scheduleResults.idGenerator);
   }
 
   /**
@@ -125,7 +124,8 @@ export class OutputGTFSCommand implements CLICommand {
   public getRoutesFromSchedule(schedule: Schedule, routesCollection: {}): RouteID {
     const route = schedule.toRoute();
     const routeKey = this.getRouteKey(route);
-    routesCollection[routeKey] = routesCollection[routeKey] || route
+    routesCollection[routeKey] = routesCollection[routeKey] || route;
+
     return routesCollection[routeKey].route_id;
   }
 

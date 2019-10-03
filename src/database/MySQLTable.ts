@@ -64,10 +64,7 @@ export class MySQLTable implements Table {
     }
   }
 
-  /**
-   * Flush and return all promises
-   */
-  public async close(): Promise<any> {
+  public async flushAll(): Promise<any> {
     await Promise.all([
       this.flush(RecordAction.Delete),
       this.flush(RecordAction.Update),
@@ -75,6 +72,13 @@ export class MySQLTable implements Table {
     ]);
 
     await this.flush(RecordAction.DelayedInsert);
+  }
+
+  /**
+   * Flush and return all promises
+   */
+  public async close(): Promise<any> {
+    await this.flushAll();
 
     if (this.db.release) {
       await this.db.release();
