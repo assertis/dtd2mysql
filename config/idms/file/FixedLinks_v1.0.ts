@@ -30,7 +30,7 @@ class FixedLinkRecord extends ALFRecord {
             sunday: link.daysofweek.filter(day => day === 'Sun').length,
         };
 
-        return {action: RecordAction.Insert, values};
+        return {action: RecordAction.Insert, values, keysValues: values};
     }
 }
 
@@ -38,15 +38,15 @@ export const idmsFixedLinksFilename = 'FixedLinks_v1.0.xml';
 
 export interface IdmsFixedLinkRecord {
     origin: {
-        crs: string, // '1DA' 
-        name: string, // 'Tower Gateway' 
-        nlc: string, // 'DL27' 
+        crs: string, // '1DA'
+        name: string, // 'Tower Gateway'
+        nlc: string, // 'DL27'
     },
     destination: {
         crs: string, // 'SRA'
         name: string, // 'Stratford (London)'
         nlc: string, // '6969'
-        tiploc: string, // 'STFD' 
+        tiploc: string, // 'STFD'
     },
     transportmode: string, // 'TRANSFER'
     startdate: string, // '2010-10-01'
@@ -59,7 +59,7 @@ export interface IdmsFixedLinkRecord {
     priority: string,
     londonzones: {
         minzone: string, // '1'
-        maxzone: string, // '3', 
+        maxzone: string, // '3',
     },
     advicemessage: string
 }

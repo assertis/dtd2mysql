@@ -16,7 +16,7 @@ describe("MySQLTmpTable", () => {
     const action = RecordAction.Insert;
     const values = { some: "value" };
 
-    table.apply({ action, values });
+    table.apply({ action, values, keysValues: {} });
 
     chai.expect(db.queries[0]).is.equal("INSERT IGNORE INTO \`_tmp_my_table\` VALUES ?");
   });
@@ -27,10 +27,10 @@ describe("MySQLTmpTable", () => {
     const action = RecordAction.Insert;
     const values = { some: "value" };
 
-    table.apply({ action, values });
+    table.apply({ action, values, keysValues: {} });
     chai.expect(db.queries.length).is.equal(0);
 
-    table.apply({ action, values });
+    table.apply({ action, values, keysValues: {} });
     chai.expect(db.queries[0]).is.equal("INSERT IGNORE INTO \`_tmp_my_table\` VALUES ?");
   });
 
@@ -40,7 +40,7 @@ describe("MySQLTmpTable", () => {
     const action = RecordAction.Insert;
     const values = { some: "value" };
 
-    table.apply({ action, values });
+    table.apply({ action, values, keysValues: {} });
     table.flushAll();
     table.persist();
 
@@ -53,7 +53,7 @@ describe("MySQLTmpTable", () => {
     const action = RecordAction.Update;
     const values = { some: "value" };
 
-    table.apply({ action, values });
+    table.apply({ action, values, keysValues: {} });
 
     chai.expect(db.queries[0]).is.equal("REPLACE INTO \`_tmp_my_table\` VALUES ?");
   });
@@ -64,11 +64,11 @@ describe("MySQLTmpTable", () => {
     const action = RecordAction.Delete;
     const values = { some: "value", other: "value" };
 
-    table.apply({ action, values });
+    table.apply({ action, values, keysValues: {} });
 
     const values2 = { diff: "col", other: "value" };
 
-    table.apply({ action, values: values2 });
+    table.apply({ action, values: values2, keysValues: {} });
 
     chai.expect(db.queries[0]).is.equal(
       "DELETE FROM \`_tmp_my_table\` WHERE (`some` = ? AND `other` = ?) OR (`diff` = ? AND `other` = ?)"
