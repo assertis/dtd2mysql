@@ -34,13 +34,14 @@ export class MySQLStream extends Writable {
       callback(Error(`Error processing ${this.filename} with data ${line}` + err.stack));
     }
   }
-  
+
   public async close(): Promise<void> {
     await Promise.all(Object.values(this.tables).map(t => t.close()));
   }
 
   public async _final(callback: WritableCallback): Promise<void> {
     try {
+      await this.close();
       callback();
     }
     catch (err) {

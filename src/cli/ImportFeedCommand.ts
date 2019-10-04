@@ -76,8 +76,6 @@ export class ImportFeedCommand implements CLICommand {
         .map(filename => this.processFile(filename))
     );
 
-    await this.flushAll();
-
     if (this.files["CFA"] instanceof MultiRecordFile) {
       await this.removeOrphanStopTimes();
     }
@@ -176,12 +174,6 @@ export class ImportFeedCommand implements CLICommand {
     }
 
     return this.index;
-  }
-
-  private async flushAll(): Promise<void> {
-    await Promise.all(
-      Object.values(this.index).map(table => table.flushAll())
-    );
   }
 
   /**
