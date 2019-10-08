@@ -35,7 +35,7 @@ export class CIFRepository {
       GROUP BY crs_code
     `);
 
-    return results.map(transfer => this.getOverwrittenTransfer(transfer));
+    return results;
   }
 
   /**
@@ -226,21 +226,6 @@ export class CIFRepository {
     return Promise.all([this.db.end(), this.stream.end()]);
   }
 
-    /**
-     * If origin/destination is pair of KGX_STP
-     * then set transfer time to 600 (10 minutes)
-     * always.
-     * Rules provided by Alistair.
-     * @param row
-     */
-  private getOverwrittenTransfer(row: Transfer): Transfer {
-      const FIXED_LEG_OVERWRITE = ["KGX", "STP"];
-      if(FIXED_LEG_OVERWRITE.includes(row.from_stop_id) &&
-      FIXED_LEG_OVERWRITE.includes(row.to_stop_id)) {
-          row.min_transfer_time = 600;
-      }
-      return row;
-  }
 }
 
 export interface ScheduleStopTimeRow {
