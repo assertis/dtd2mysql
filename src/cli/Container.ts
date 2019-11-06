@@ -31,6 +31,7 @@ import { ImportFeedTransactionalCommand, ImportFeedTransactionalCommandInterface
 import { DownloadAndProcessInTransactionCommand } from './DownloadAndProcessInTransactionCommand';
 import { BackupDatabaseCommand } from './BackupDatabaseCommand';
 import { S3Storage } from '../backup/S3Storage';
+import {TransferPatternCommand} from "../tp/TransferPatternCommand";
 
 export class Container {
 
@@ -87,9 +88,20 @@ export class Container {
         return this.getCleanupDatabasesCommand();
       case "--backup-fares":
         return this.getBackupDatabaseCommand('fares');
+      case "--start-transfer-patterns":
+        return this.getTransferPatternCommand();
       default:
         return this.getShowHelpCommand();
     }
+  }
+
+  /**
+   * Command which start TP Generation process after
+   * data update by invoking lambda
+   */
+  public async getTransferPatternCommand(): Promise<TransferPatternCommand> {
+    const lambda = await this.getLambda();
+    return new TransferPatternCommand(lambda);
   }
 
   @memoize
@@ -244,6 +256,31 @@ export class Container {
   @memoize
   private async getDownloadIdmsGroupCommand(): Promise<DownloadFileFromS3Command | DownloadFileCommand> {
     return this.getDownloadIdmsFileCommand(idmsGroupFilename);
+  }
+
+  public async getLambda(): Promise<AWS.Lambda> {
+    const key = process.env.LAMBDA_KEY;
+    const secret = process.env.LAMBDA_SECRET;
+    const region = process.env.LAMBDA_REGION || 'eu-west-1';
+    const debug = process.env.DEBUG;
+
+    const hasCredentials = !!(key && secret);
+    if (!hasCredentials) {
+      console.warn('LAMBDA_KEY or LAMBDA_SECRET is not set. If server do not have access to Lambda, process will fail!');
+    }
+    const config: AWS.Lambda.Types.ClientConfiguration = {
+      region
+    };
+
+    if (hasCredentials) {
+      config.accessKeyId = process.env.LAMBDA_KEY || '';
+      config.secretAccessKey = process.env.LAMBDA_SECRET || '';
+    }
+    if (debug) {
+      config.logger= console;
+    }
+
+    return new AWS.Lambda(config);
   }
 
   public async getS3(): Promise<AWS.S3> {
