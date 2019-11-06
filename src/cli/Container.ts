@@ -259,23 +259,13 @@ export class Container {
   }
 
   public async getLambda(): Promise<AWS.Lambda> {
-    const key = process.env.LAMBDA_KEY;
-    const secret = process.env.LAMBDA_SECRET;
     const region = process.env.LAMBDA_REGION || 'eu-west-1';
     const debug = process.env.DEBUG;
 
-    const hasCredentials = !!(key && secret);
-    if (!hasCredentials) {
-      console.warn('LAMBDA_KEY or LAMBDA_SECRET is not set. If server do not have access to Lambda, process will fail!');
-    }
     const config: AWS.Lambda.Types.ClientConfiguration = {
       region
     };
 
-    if (hasCredentials) {
-      config.accessKeyId = process.env.LAMBDA_KEY || '';
-      config.secretAccessKey = process.env.LAMBDA_SECRET || '';
-    }
     if (debug) {
       config.logger= console;
     }
