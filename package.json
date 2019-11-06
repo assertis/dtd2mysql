@@ -16,7 +16,7 @@
     "gtfs": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --gtfs",
     "gtfs-import": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --gtfs-import",
     "gtfs-zip": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --gtfs-zip",
-    "transfer-patterns": "LAMBDA_KEY=AKIA3ZDTHT6NLAMBGA73 LAMBDA_SECRET=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 ts-node ./src/index.ts --start-transfer-patterns",
+    "transfer-patterns": "ts-node ./src/index.ts --start-transfer-patterns",
     "dataVersion": "ts-node ./src/dataVersion.ts",
     "dev": "ts-node ./src/dev.ts"
   },
