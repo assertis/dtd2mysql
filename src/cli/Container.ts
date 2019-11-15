@@ -31,6 +31,9 @@ import { ImportFeedTransactionalCommand, ImportFeedTransactionalCommandInterface
 import { DownloadAndProcessInTransactionCommand } from './DownloadAndProcessInTransactionCommand';
 import { BackupDatabaseCommand } from './BackupDatabaseCommand';
 import { S3Storage } from '../backup/S3Storage';
+import {CheckAvailableFilesCommand} from "./CheckAvailableFilesCommand";
+import {faresPath, routeingPath, timetablePath} from "../sftp/Paths";
+import {SourceManager} from "../sftp/SourceManager";
 
 export class Container {
 
@@ -58,11 +61,11 @@ export class Container {
       case "--gtfs-zip":
         return this.getOutputGTFSZipCommand();
       case "--download-fares":
-        return this.getDownloadCommand("/fares/");
+        return this.getDownloadCommand(faresPath);
       case "--download-timetable":
-        return this.getDownloadCommand("/timetable/");
+        return this.getDownloadCommand(timetablePath);
       case "--download-routeing":
-        return this.getDownloadCommand("/routing_guide/");
+        return this.getDownloadCommand(routeingPath);
       case "--download-nfm64":
         return this.getDownloadNFM64Command();
       case "--download-idms-fixed-links":
@@ -70,13 +73,13 @@ export class Container {
       case "--download-idms-group":
         return this.getDownloadIdmsGroupCommand();
       case "--get-fares":
-        return this.getDownloadAndProcessCommand("/fares/", this.getFaresImportCommand());
+        return this.getDownloadAndProcessCommand(faresPath, this.getFaresImportCommand());
       case "--get-fares-in-transaction":
-        return this.getDownloadAndProcessInTransactionCommand("/fares/", this.getFaresImportCommandWithFallback());
+        return this.getDownloadAndProcessInTransactionCommand(faresPath, this.getFaresImportCommandWithFallback());
       case "--get-timetable":
-        return this.getDownloadAndProcessCommand("/timetable/", this.getTimetableImportCommand());
+        return this.getDownloadAndProcessCommand(timetablePath, this.getTimetableImportCommand());
       case "--get-routeing":
-        return this.getDownloadAndProcessCommand("/routing_guide/", this.getRouteingImportCommand());
+        return this.getDownloadAndProcessCommand(routeingPath, this.getRouteingImportCommand());
       case "--get-nfm64":
         return this.getDownloadAndProcessNFM64Command();
       case "--get-idms-fixed-links":
@@ -87,9 +90,35 @@ export class Container {
         return this.getCleanupDatabasesCommand();
       case "--backup-fares":
         return this.getBackupDatabaseCommand('fares');
+      case "--check-files-availability":
+        return this.getCheckAvailableFilesCommand();
       default:
         return this.getShowHelpCommand();
     }
+  }
+
+  @memoize
+  public async getCheckAvailableFilesCommand(): Promise<CheckAvailableFilesCommand> {
+    const [
+        sftp,
+        fares,
+        timetable
+    ] = await Promise.all([
+        this.getSFTP(),
+        this.getDatabaseConnection(process.env.FARES_DATABASE),
+        this.getDatabaseConnection(process.env.TIMETABLE_DATABASE)
+    ]);
+    const [
+        faresFileManager,
+        timetableFileManager
+    ] = [
+        new SourceManager(sftp, fares),
+        new SourceManager(sftp, timetable)
+    ];
+    return new CheckAvailableFilesCommand(
+        faresFileManager,
+        timetableFileManager,
+    );
   }
 
   @memoize
@@ -111,7 +140,7 @@ export class Container {
   public async getCleanupDatabasesCommand(): Promise<CleanupDatabasesCommand> {
     return new CleanupDatabasesCommand(
       this.getDatabaseConnection(),
-      new OfflineDataProcessor(process.env.DATABASE_NAME || "", this.databaseConfiguration)
+      new OfflineDataProcessor(process.env.DATABASE_NAME || "", this.getDatabaseConfiguration())
     );
   }
 
@@ -191,7 +220,7 @@ export class Container {
 
   @memoize
   public getImportGTFSCommand(): Promise<GTFSImportCommand> {
-    return Promise.resolve(new GTFSImportCommand(this.databaseConfiguration));
+    return Promise.resolve(new GTFSImportCommand(this.getDatabaseConfiguration()));
   }
 
   @memoize
@@ -218,7 +247,12 @@ export class Container {
 
   @memoize
   private async getDownloadCommand(path: string): Promise<DownloadCommand> {
-    return new DownloadCommand(await this.getDatabaseConnection(), await this.getSFTP(), path);
+    const [db, sftp] = await Promise.all([
+      this.getDatabaseConnection(),
+      this.getSFTP()
+    ]);
+    const fileManager = new SourceManager(sftp, db);
+    return new DownloadCommand(fileManager, path);
   }
 
   @memoize
@@ -334,20 +368,20 @@ export class Container {
   }
 
   @memoize
-  public getDatabaseConnection(): DatabaseConnection {
+  public getDatabaseConnection(customDbName?: string): DatabaseConnection {
     return require('mysql2/promise').createPool({
-      ...this.databaseConfiguration,
+      ...this.getDatabaseConfiguration(customDbName),
     });
   }
 
   @memoize
   public getDatabaseStream() {
-    return require('mysql2').createPool(this.databaseConfiguration);
+    return require('mysql2').createPool(this.getDatabaseConfiguration());
 
   }
 
-  public get databaseConfiguration(): DatabaseConfiguration {
-    if (!process.env.DATABASE_NAME) {
+  public getDatabaseConfiguration(dbName?: string): DatabaseConfiguration {
+    if (!dbName && !process.env.DATABASE_NAME) {
       throw new Error("Please set the DATABASE_NAME environment variable.");
     }
 
@@ -355,7 +389,7 @@ export class Container {
       host: process.env.DATABASE_HOSTNAME || "localhost",
       user: process.env.DATABASE_USERNAME || "root",
       password: process.env.DATABASE_PASSWORD || null,
-      database: <string>process.env.DATABASE_NAME,
+      database: dbName || <string>process.env.DATABASE_NAME,
       connectionLimit: 20,
       multipleStatements: true
     };
