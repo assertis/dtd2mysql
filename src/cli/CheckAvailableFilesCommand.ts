@@ -1,12 +1,10 @@
 import {CLICommand} from "./CLICommand";
-import {PromiseSFTP} from "../sftp/PromiseSFTP";
 import {faresPath, timetablePath} from "../sftp/Paths";
 import {SourceManager} from "../sftp/SourceManager";
 
 export class CheckAvailableFilesCommand implements CLICommand  {
 
     public constructor(
-        private readonly ftpSource: PromiseSFTP,
         private readonly faresSource: SourceManager,
         private readonly timetableSource: SourceManager
     ) {}

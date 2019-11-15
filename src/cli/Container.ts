@@ -116,7 +116,6 @@ export class Container {
         new SourceManager(sftp, timetable)
     ];
     return new CheckAvailableFilesCommand(
-        sftp,
         faresFileManager,
         timetableFileManager,
     );
