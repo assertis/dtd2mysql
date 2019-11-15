@@ -28,7 +28,7 @@ const linkViewsToOtherDatabase = async () => {
   console.info('[INFO] Database with data => ', databaseWithData);
   const offlineDataProcessor = new OfflineDataProcessor(
       databaseWithViews,
-      container.databaseConfiguration
+      container.getDatabaseConfiguration()
   );
   const viewsSql = offlineDataProcessor.getViews(databaseWithData);
   console.info('[INFO] SQL Query => ', viewsSql);

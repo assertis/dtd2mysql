@@ -1,13 +1,10 @@
 import {CLICommand} from "./CLICommand";
-import {PromiseSFTP} from "../sftp/PromiseSFTP";
-import {FileEntry} from "ssh2-streams";
-import {DatabaseConnection} from "../database/DatabaseConnection";
+import {SourceManager} from "../sftp/SourceManager";
 
 export class DownloadCommand implements CLICommand {
 
   constructor(
-    private readonly db: DatabaseConnection,
-    private readonly sftp: PromiseSFTP,
+    private readonly fileManager: SourceManager,
     private readonly directory: string
   ) {}
 
@@ -17,11 +14,11 @@ export class DownloadCommand implements CLICommand {
   public async run(argv: string[]): Promise<string[]> {
     const outputDirectory = argv[3] || "/tmp/";
     const [remoteFiles, lastProcessedFile] = await Promise.all([
-      this.sftp.readdir(this.directory),
-      this.getLastProcessedFile()
+      this.fileManager.getRemoteFiles(this.directory),
+      this.fileManager.getLastProcessedFile()
     ]);
 
-    const files = this.getFilesToProcess(remoteFiles, lastProcessedFile);
+    const files = this.fileManager.getFilesToProcess(remoteFiles, lastProcessedFile);
 
     if (files.length > 0) {
       console.log(`Downloading ${files.length} feed file(s)`);
@@ -32,43 +29,15 @@ export class DownloadCommand implements CLICommand {
 
     try {
       await Promise.all(
-        files.map(f => this.sftp.fastGet(this.directory + f, outputDirectory + f))
+        files.map(f => this.fileManager.sftp.fastGet(this.directory + f, outputDirectory + f))
       );
     }
     catch (err) {
       console.error(err);
     }
 
-    this.sftp.end();
+    this.fileManager.sftp.end();
 
     return files.map(filename => outputDirectory + filename);
   }
-
-  private async getLastProcessedFile(): Promise<string | undefined> {
-    try {
-      const [[log]] = await this.db.query("SELECT * FROM log ORDER BY id DESC LIMIT 1");
-
-      return log ? log.filename : undefined;
-    }
-    catch (err) {
-      return undefined;
-    }
-  }
-
-  /**
-   * Do a directory listing to get the filename of the last full refresh
-   */
-  private getFilesToProcess(dir: FileEntry[], lastProcessed: string | undefined): string[] {
-    dir.sort((a: FileEntry, b: FileEntry) => b.attrs.mtime - a.attrs.mtime);
-
-    const lastRefresh = dir.findIndex(i => i.filename.charAt(4) === "F" || i.filename.startsWith("RJRG"));
-    const lastFile = dir.findIndex(i => i.filename === lastProcessed);
-    const files = lastFile > -1 && (lastFile <= lastRefresh || lastRefresh < 0)
-      ? dir.slice(0, lastFile)
-      : dir.slice(0, lastRefresh + 1);
-
-    return files.map(f => f.filename).reverse();
-  }
-
 }
-
