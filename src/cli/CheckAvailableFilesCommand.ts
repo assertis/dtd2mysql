@@ -26,9 +26,9 @@ export class CheckAvailableFilesCommand implements CLICommand  {
         } else {
             await this.end();
             /**
-             * We throw to stop executing any other command after check availability.
+             * We return exit code to stop executing any other command after check availability.
              */
-            throw new Error("No data to update");
+            process.exit(500);
         }
     }
 

@@ -32,7 +32,7 @@ import { DownloadAndProcessInTransactionCommand } from './DownloadAndProcessInTr
 import { BackupDatabaseCommand } from './BackupDatabaseCommand';
 import { S3Storage } from '../backup/S3Storage';
 import {CheckAvailableFilesCommand} from "./CheckAvailableFilesCommand";
-import {faresPath, routeingPath, timetablePath} from "../sftp/Paths";
+import {faresPath, routingPath, timetablePath} from "../sftp/Paths";
 import {SourceManager} from "../sftp/SourceManager";
 
 export class Container {
@@ -65,7 +65,7 @@ export class Container {
       case "--download-timetable":
         return this.getDownloadCommand(timetablePath);
       case "--download-routeing":
-        return this.getDownloadCommand(routeingPath);
+        return this.getDownloadCommand(routingPath);
       case "--download-nfm64":
         return this.getDownloadNFM64Command();
       case "--download-idms-fixed-links":
@@ -79,7 +79,7 @@ export class Container {
       case "--get-timetable":
         return this.getDownloadAndProcessCommand(timetablePath, this.getTimetableImportCommand());
       case "--get-routeing":
-        return this.getDownloadAndProcessCommand(routeingPath, this.getRouteingImportCommand());
+        return this.getDownloadAndProcessCommand(routingPath, this.getRouteingImportCommand());
       case "--get-nfm64":
         return this.getDownloadAndProcessNFM64Command();
       case "--get-idms-fixed-links":
