@@ -92,8 +92,8 @@ export class CleanFaresCommand implements CLICommand {
       const startDate = this.getFirstDateAfter(date.start_date, record.date_from);
       const endDate = isFuture ? moment(date.end_date) : this.getFirstDateAfter(startDate.toDate(), record.date_to);
 
-      if (startDate.isAfter(endDate)) {
-        throw new Error(`Error processing ${record} start date after end date: ${startDate.format("YYYY-MM-DD")} ${endDate.format("YYYY-MM-DD")}`);
+      if (startDate.isAfter(endDate)  || !startDate.isValid() || !endDate.isValid()) {
+        throw new Error(`Error processing ${record} dates are invalid: start = ${startDate.format("YYYY-MM-DD")} end=${endDate.format("YYYY-MM-DD")}`);
       }
       else {
         return this.db.query(`UPDATE ${tableName} SET start_date = ?, end_date = ? WHERE id = ?`, [
