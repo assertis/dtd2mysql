@@ -114,8 +114,13 @@ export class CleanFaresCommand implements CLICommand {
   private getFirstDateAfter(earliestDate: Date, restrictionMonth: string): Moment {
     const earliestMonth = moment(earliestDate).format("MMDD");
     const yearOffset = (parseInt(earliestMonth) > parseInt(restrictionMonth)) ? 1 : 0;
+    const out = moment((earliestDate.getFullYear() + yearOffset) + restrictionMonth, "YYYYMMDD");
 
-    return moment((earliestDate.getFullYear() + yearOffset) + restrictionMonth, "YYYYMMDD");
+    if (!out.isValid() && restrictionMonth === '0229') {
+      return moment((earliestDate.getFullYear() + yearOffset) + '0228', "YYYYMMDD");
+    }
+
+    return out;
   }
 
   private async queryWithRetry(query: string, max: number = 10, current: number = 1): Promise<void> {
