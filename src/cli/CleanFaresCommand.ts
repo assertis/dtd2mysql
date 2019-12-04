@@ -40,6 +40,9 @@ export class CleanFaresCommand implements CLICommand {
     "UPDATE railcard SET min_adults=1, max_adults=1, min_children=0, max_children=0, max_passengers=1 WHERE railcard_code='JCP'",
     "UPDATE railcard SET min_adults=0, max_adults=9, min_children=0, max_children=9, max_passengers=9 WHERE railcard_code=''",
     "UPDATE status_discount SET discount_indicator = 'X' WHERE status_code != '000' and status_code != '001' AND discount_percentage = 0",
+  ];
+
+  private readonly indexes = [
     "CREATE INDEX fare_flow_id ON fare (flow_id);",
   ];
 
@@ -59,6 +62,7 @@ export class CleanFaresCommand implements CLICommand {
       await Promise.all([
         this.setNetworkAreaRestrictionCodes(),
         this.clean(),
+        this.index(),
         this.applyRestrictionDates()
       ]);
     }
@@ -73,6 +77,12 @@ export class CleanFaresCommand implements CLICommand {
     await Promise.all(this.queries.map(q => this.queryWithRetry(q)));
 
     console.log("Removed old and irrelevant fares data");
+  }
+
+  private async index(): Promise<void> {
+    await Promise.all(this.indexes.map(q => this.queryWithRetry(q)));
+
+    console.log("Added required indexes");
   }
 
   private async applyRestrictionDates(): Promise<void> {
