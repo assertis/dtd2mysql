@@ -43,7 +43,7 @@ export class CleanFaresCommand implements CLICommand {
   ];
 
   private readonly indexes = [
-    "ALTER TABLE fare ADD INDEX IF NOT EXISTS fare_flow_id (flow_id)",
+    "CREATE INDEX fare_flow_id ON fare (flow_id)",
   ];
 
   private readonly restrictionTables = [
@@ -62,9 +62,9 @@ export class CleanFaresCommand implements CLICommand {
       await Promise.all([
         this.setNetworkAreaRestrictionCodes(),
         this.clean(),
-        this.index(),
         this.applyRestrictionDates()
       ]);
+      await this.index();
     }
     catch (err) {
       console.error(err);
@@ -74,22 +74,19 @@ export class CleanFaresCommand implements CLICommand {
   }
 
   private async clean(): Promise<void> {
-    await Promise.all(this.queries.map(q => this.queryWithRetry(q)));
-
+    await Promise.all(this.queries.map(async q => this.queryWithRetry(q)));
     console.log("Removed old and irrelevant fares data");
   }
 
   private async index(): Promise<void> {
-    await Promise.all(this.indexes.map(q => {
+    this.indexes.map(async q => {
       try {
-        this.queryWithRetry(q);
+        await this.queryWithRetry(q, 1);
       } catch(err) {
-        console.log(q)
         console.log('Index exist');
       }
-    }));
-
-    console.log("Added required indexes");
+    });
+    console.log("Required indexes added");
   }
 
   private async applyRestrictionDates(): Promise<void> {
