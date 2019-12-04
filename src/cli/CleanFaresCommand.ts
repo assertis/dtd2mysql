@@ -43,7 +43,7 @@ export class CleanFaresCommand implements CLICommand {
   ];
 
   private readonly indexes = [
-    "CREATE INDEX fare_flow_id ON fare (flow_id);",
+    "ALTER TABLE fare ADD INDEX IF NOT EXISTS fare_flow_id (flow_id)",
   ];
 
   private readonly restrictionTables = [
@@ -80,7 +80,14 @@ export class CleanFaresCommand implements CLICommand {
   }
 
   private async index(): Promise<void> {
-    await Promise.all(this.indexes.map(q => this.queryWithRetry(q)));
+    await Promise.all(this.indexes.map(q => {
+      try {
+        this.queryWithRetry(q);
+      } catch(err) {
+        console.log(q)
+        console.log('Index exist');
+      }
+    }));
 
     console.log("Added required indexes");
   }
