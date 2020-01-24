@@ -24,6 +24,7 @@ export class CheckAvailableFilesCommand implements CLICommand  {
             await this.end();
             console.log("Process the data");
         } else {
+            console.log("No available files to process");
             await this.end();
             /**
              * We return exit code to stop executing any other command after check availability.

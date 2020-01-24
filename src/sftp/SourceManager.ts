@@ -13,7 +13,12 @@ export class SourceManager {
     }
 
     public async getRemoteFiles(directory: string): Promise<FileEntry[]> {
+      try {
         return this.sftp.readdir(directory);
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
     }
 
     public async getLastProcessedFile(): Promise<string | undefined> {
@@ -23,6 +28,7 @@ export class SourceManager {
             return log ? log.filename : undefined;
         }
         catch (err) {
+            console.log(err);
             return undefined;
         }
     }
