@@ -80,6 +80,10 @@ class MockDatabaseConnection implements DatabaseConnection {
     return Promise.resolve();
   }
 
+  execute(sql: string, parameters?: any[]): Promise<void> {
+    return Promise.resolve();
+  }
+
   end(): Promise<void> {
     return Promise.resolve();
   }

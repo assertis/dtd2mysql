@@ -81,7 +81,7 @@ export class CleanFaresCommand implements CLICommand {
   private async index(): Promise<void> {
     this.indexes.map(async q => {
       try {
-        await this.queryWithRetry(q, 1);
+        await this.executeWithRetry(q, 1);
       } catch(err) {
         console.log('Index exist');
       }
@@ -148,6 +148,20 @@ export class CleanFaresCommand implements CLICommand {
       }
       else {
         await this.queryWithRetry(query, max, current + 1);
+      }
+    }
+  }
+
+  private async executeWithRetry(query: string, max: number = 10, current: number = 1): Promise<void> {
+    try {
+      await this.db.execute(query)
+    }
+    catch (err) {
+      if (current >= max) {
+        throw err;
+      }
+      else {
+        await this.executeWithRetry(query, max, current + 1);
       }
     }
   }

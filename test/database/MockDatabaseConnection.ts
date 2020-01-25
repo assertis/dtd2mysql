@@ -15,6 +15,11 @@ export class MockDatabaseConnection implements DatabaseConnection {
     return Promise.resolve(value);
   }
 
+  execute(sql: string, parameters?: any[]): Promise<void> {
+    this.queries.push(sql);
+    return Promise.resolve();
+  }
+
   end(): Promise<void> {
     return Promise.resolve();
   }
