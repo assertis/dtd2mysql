@@ -11,6 +11,7 @@ const dropOffActivities = ["T ", "TF", "D "];
 const coordinatedActivity = ["R "];
 const notAdvertised = "N ";
 
+const busCategories = ["BR", "BS"]; //Bus Replacement and Bus Schedule
 /**
  * This class takes a stream of results and builds a list of Schedules
  */
@@ -67,6 +68,15 @@ export class ScheduleBuilder {
   private createSchedule(row: ScheduleStopTimeRow, stops: StopTime[]): Schedule {
     this.maxId = Math.max(this.maxId, row.id);
 
+    /**
+     * General rule for seating classes
+     * Blank or B - First and standard
+     * S - Standard class only.
+     * For buses in data train_class is blank which causes some issues that 1st class fares are available on buses
+     * which is not true
+     */
+    const mode = routeTypeIndex.hasOwnProperty(row.train_category) ? routeTypeIndex[row.train_category] : RouteType.Rail;
+    const firstClassAvailable = busCategories.includes(row.train_category) ? false : row.train_class !== "S";
     return new Schedule(
       row.id,
       stops,
@@ -85,10 +95,10 @@ export class ScheduleBuilder {
           6: row.saturday
         }
       ),
-      routeTypeIndex.hasOwnProperty(row.train_category) ? routeTypeIndex[row.train_category] : RouteType.Rail,
+      mode,
       row.atoc_code,
       row.stp_indicator,
-      row.train_class !== "S",
+      firstClassAvailable,
       row.reservations !== null,
       row.activity
     );
