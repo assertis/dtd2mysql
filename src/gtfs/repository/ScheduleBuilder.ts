@@ -75,6 +75,7 @@ export class ScheduleBuilder {
      * For buses in data train_class is blank which causes some issues that 1st class fares are available on buses
      * which is not true
      */
+    const mode = routeTypeIndex.hasOwnProperty(row.train_category) ? routeTypeIndex[row.train_category] : RouteType.Rail;
     const firstClassAvailable = busCategories.includes(row.train_category) ? false : row.train_class !== "S";
     return new Schedule(
       row.id,
@@ -94,7 +95,7 @@ export class ScheduleBuilder {
           6: row.saturday
         }
       ),
-      routeTypeIndex.hasOwnProperty(row.train_category) ? routeTypeIndex[row.train_category] : RouteType.Rail,
+      mode,
       row.atoc_code,
       row.stp_indicator,
       firstClassAvailable,
