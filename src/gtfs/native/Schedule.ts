@@ -7,6 +7,7 @@ import {AgencyID} from "../file/Agency";
 import {CRS} from "../file/Stop";
 import {IdGenerator, OverlayRecord, RSID, STP, TUID} from "./OverlayRecord";
 import * as memoize  from "memoized-class-decorator";
+import {ReservationType} from '../file/Reservation';
 
 /**
  * A CIF schedule (BS record)
@@ -23,7 +24,7 @@ export class Schedule implements OverlayRecord {
     public readonly operator: AgencyID | null,
     public readonly stp: STP,
     public readonly firstClassAvailable: boolean,
-    public readonly reservationPossible: boolean,
+    public readonly reservationType: ReservationType,
     public readonly activity: Activity
   ) {}
 
@@ -53,7 +54,7 @@ export class Schedule implements OverlayRecord {
       this.operator,
       this.stp,
       this.firstClassAvailable,
-      this.reservationPossible,
+      this.reservationType,
       this.activity
     );
   }
@@ -87,7 +88,7 @@ export class Schedule implements OverlayRecord {
       route_text_color: null,
       route_color: null,
       route_url: null,
-      route_desc: [this.modeDescription, this.classDescription, this.reservationDescription].join(". ")
+      route_desc: [this.modeDescription, this.classDescription, this.reservationType].join(". ")
     };
   }
 
@@ -105,10 +106,6 @@ export class Schedule implements OverlayRecord {
 
   private get classDescription(): string {
     return this.firstClassAvailable ? "First class available" : "Standard class only";
-  }
-
-  private get reservationDescription(): string {
-    return this.reservationPossible ? "Reservation possible" : "Reservation not possible";
   }
 
   public before(location: CRS): StopTime[] {
