@@ -99,7 +99,7 @@ export class ScheduleBuilder {
       row.atoc_code,
       row.stp_indicator,
       firstClassAvailable,
-      row.reservations !== null,
+      row.reservations,
       row.activity
     );
   }

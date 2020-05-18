@@ -9,4 +9,5 @@ export interface Trip {
   direction_id: 0 | 1;
   wheelchair_accessible: 0 | 1 | 2;
   bikes_allowed: 0 | 1 | 2;
+  reservation_flag: 'A' | 'E' | 'R' | 'S' | null;
 }
