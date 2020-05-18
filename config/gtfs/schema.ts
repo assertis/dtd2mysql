@@ -141,6 +141,7 @@ CREATE TABLE trips (
   direction_id tinyint(1) unsigned DEFAULT NULL,
   wheelchair_accessible tinyint(1) unsigned DEFAULT NULL,
   bikes_allowed tinyint(1) unsigned DEFAULT NULL,
+  reservation_flag varchar(2) DEFAULT NULL,
   PRIMARY KEY (trip_id),
   KEY service_id (service_id),
   KEY trip (trip_headsign)

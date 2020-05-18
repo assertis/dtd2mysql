@@ -23,3 +23,4 @@ export enum STP {
 
 export type IdGenerator = IterableIterator<number>;
 
+export type ServiceReservation = 'A' | 'E' | 'R' | 'S' | null;

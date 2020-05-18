@@ -5,7 +5,6 @@ import moment = require("moment");
 import {ScheduleCalendar} from "../native/ScheduleCalendar";
 import {ScheduleStopTimeRow} from "./CIFRepository";
 import {ActivityMap, StopTime} from "../file/StopTime";
-import {ReservationType} from "../file/Reservation";
 
 const pickupActivities = ["T ", "TB", "U "];
 const dropOffActivities = ["T ", "TF", "D "];
@@ -100,24 +99,9 @@ export class ScheduleBuilder {
       row.atoc_code,
       row.stp_indicator,
       firstClassAvailable,
-      this.getReservationType(row.reservations),
+      row.reservations,
       row.activity
     );
-  }
-
-  private getReservationType(reservations: string | null): ReservationType {
-    switch(reservations) {
-      case 'A':
-        return ReservationType.Mandatory;
-      case 'E':
-        return ReservationType.BicyclesEssential;
-      case 'R':
-        return ReservationType.Recommended;
-      case 'S':
-        return ReservationType.Possible;
-      default:
-        return ReservationType.NotPossible;
-    }
   }
 
   public getActivities(activity: string) {

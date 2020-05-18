@@ -5,8 +5,7 @@ import {Trip} from "../file/Trip";
 import {Route, RouteType} from "../file/Route";
 import {AgencyID} from "../file/Agency";
 import {CRS} from "../file/Stop";
-import {OverlayRecord, RSID, STP, TUID} from "./OverlayRecord";
-import {ReservationType} from "../file/Reservation";
+import {OverlayRecord, RSID, ServiceReservation, STP, TUID} from './OverlayRecord';
 
 /**
  * A CIF schedule (BS record)
@@ -23,7 +22,7 @@ export class Schedule implements OverlayRecord {
     public readonly operator: AgencyID | null,
     public readonly stp: STP,
     public readonly firstClassAvailable: boolean,
-    public readonly reservationType: ReservationType,
+    public readonly reservationFlag: ServiceReservation,
     public readonly activity: Activity
   ) {}
 
@@ -53,7 +52,7 @@ export class Schedule implements OverlayRecord {
       this.operator,
       this.stp,
       this.firstClassAvailable,
-      this.reservationType,
+      this.reservationFlag,
       this.activity
     );
   }
@@ -70,7 +69,8 @@ export class Schedule implements OverlayRecord {
       trip_short_name: this.rsid,
       direction_id: 0,
       wheelchair_accessible: 0,
-      bikes_allowed: 0
+      bikes_allowed: 0,
+      reservation_flag: this.reservationFlag
     };
   }
 
@@ -87,8 +87,18 @@ export class Schedule implements OverlayRecord {
       route_text_color: null,
       route_color: null,
       route_url: null,
-      route_desc: [this.modeDescription, this.classDescription, this.reservationType].join(". ")
+      route_desc: [this.modeDescription, this.classDescription, this.reservationDescription].join(". ")
     };
+  }
+
+  private get reservationDescription(): string {
+    switch(this.reservationFlag) {
+      case 'A': return "Reservation mandatory";
+      case 'E': return "Reservation for bicycles essential";
+      case 'R': return "Reservation recommended";
+      case 'S': return "Reservation possible";
+      default: return "Reservation not possible"
+    }
   }
 
   private get modeDescription(): string {
