@@ -105,7 +105,7 @@ export class ScheduleBuilder {
     );
   }
 
-  private getReservationType(reservations: string): ReservationType {
+  private getReservationType(reservations: string | null): ReservationType {
     switch(reservations) {
       case 'A':
         return ReservationType.Mandatory;
