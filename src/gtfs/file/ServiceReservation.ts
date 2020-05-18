@@ -1,4 +1,4 @@
-export enum ReservationType {
+export enum ServiceReservationType {
     Mandatory = "Reservation mandatory",
     BicyclesEssential = "Reservation for bicycles essential",
     Recommended = "Reservation recommended",
