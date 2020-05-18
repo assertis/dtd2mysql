@@ -4,8 +4,8 @@ import {RouteType} from "../file/Route";
 import moment = require("moment");
 import {ScheduleCalendar} from "../native/ScheduleCalendar";
 import {ScheduleStopTimeRow} from "./CIFRepository";
-import {ActivityMap, StopTime} from '../file/StopTime';
-import {ReservationType} from '../file/Reservation';
+import {ActivityMap, StopTime} from "../file/StopTime";
+import {ReservationType} from "../file/Reservation";
 
 const pickupActivities = ["T ", "TB", "U "];
 const dropOffActivities = ["T ", "TF", "D "];

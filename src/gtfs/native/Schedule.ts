@@ -1,13 +1,12 @@
 
 import {Activity, StopTime} from "../file/StopTime";
-import {OverlapType, ScheduleCalendar} from "./ScheduleCalendar";
+import {ScheduleCalendar} from "./ScheduleCalendar";
 import {Trip} from "../file/Trip";
 import {Route, RouteType} from "../file/Route";
 import {AgencyID} from "../file/Agency";
 import {CRS} from "../file/Stop";
-import {IdGenerator, OverlayRecord, RSID, STP, TUID} from "./OverlayRecord";
-import * as memoize  from "memoized-class-decorator";
-import {ReservationType} from '../file/Reservation';
+import {OverlayRecord, RSID, STP, TUID} from "./OverlayRecord";
+import {ReservationType} from "../file/Reservation";
 
 /**
  * A CIF schedule (BS record)

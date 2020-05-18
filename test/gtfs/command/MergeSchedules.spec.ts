@@ -1,13 +1,13 @@
-import * as chai from 'chai';
-import {STP, TUID} from '../../../src/gtfs/native/OverlayRecord';
-import {mergeSchedules} from '../../../src/gtfs/command/MergeSchedules';
-import {applyOverlays} from '../../../src/gtfs/command/ApplyOverlays';
-import {Days, ScheduleCalendar} from '../../../src/gtfs/native/ScheduleCalendar';
-import {StopTime} from '../../../src/gtfs/file/StopTime';
-import {Schedule} from '../../../src/gtfs/native/Schedule';
-import {RouteType} from '../../../src/gtfs/file/Route';
-import {ReservationType} from '../../../src/gtfs/file/Reservation';
-import moment = require('moment');
+import * as chai from "chai";
+import {STP, TUID} from "../../../src/gtfs/native/OverlayRecord";
+import {mergeSchedules} from "../../../src/gtfs/command/MergeSchedules";
+import {applyOverlays} from "../../../src/gtfs/command/ApplyOverlays";
+import {Days, ScheduleCalendar} from "../../../src/gtfs/native/ScheduleCalendar";
+import {StopTime} from "../../../src/gtfs/file/StopTime";
+import {Schedule} from "../../../src/gtfs/native/Schedule";
+import {RouteType} from "../../../src/gtfs/file/Route";
+import {ReservationType} from "../../../src/gtfs/file/Reservation";
+import moment = require("moment");
 
 describe("MergeSchedules", () => {
 
