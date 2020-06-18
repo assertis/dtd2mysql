@@ -105,7 +105,7 @@ const stop = new MultiFormatRecord(
   2,
   [],
   true,
-    RecordAction.Update
+    RecordAction.Update // JP-838
 );
 
 
