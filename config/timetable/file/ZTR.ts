@@ -1,4 +1,3 @@
-
 import {RecordWithManualIdentifier} from "../../../src/feed/record/FixedWidthRecord";
 import {TextField, VariableLengthText} from "../../../src/feed/field/TextField";
 import {MultiRecordFile} from "../../../src/feed/file/MultiRecordFile";
@@ -7,6 +6,7 @@ import {ShortDateField} from "../../../src/feed/field/DateField";
 import {ForeignKeyField} from "../../../src/feed/field/ForeignKeyField";
 import {TimeField} from "../../../src/feed/field/TimeField";
 import {MultiFormatRecord} from "../../../src/feed/record/MultiFormatRecord";
+import {RecordAction} from "../../../src/feed/record/Record";
 
 
 const schedule = new RecordWithManualIdentifier(
@@ -98,13 +98,14 @@ const stopRecordTypes = {
 
 const stop = new MultiFormatRecord(
   "z_stop_time",
-  ["z_schedule", "location", "public_departure_time"],
+  ["z_schedule", "location", "public_departure_time", "public_arrival_time", "activity"],
   stopRecordTypes.LI,
   stopRecordTypes,
   0,
   2,
   [],
-  true
+  true,
+  RecordAction.Update // JP-838
 );
 
 
