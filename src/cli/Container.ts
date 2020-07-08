@@ -76,12 +76,18 @@ export class Container {
         return this.getDownloadAndProcessCommand(faresPath, this.getFaresImportCommand());
       case "--get-fares-in-transaction":
         return this.getDownloadAndProcessInTransactionCommand(faresPath, this.getFaresImportCommandWithFallback());
+      case "--get-timetable-in-transaction":
+        return this.getDownloadAndProcessInTransactionCommand(timetablePath, this.getTimetableImportCommandWithFallback());
+      case "--get-routeing-in-transaction":
+        return this.getDownloadAndProcessInTransactionCommand(routingPath, this.getRouteingImportCommandWithFallback()  );
       case "--get-timetable":
         return this.getDownloadAndProcessCommand(timetablePath, this.getTimetableImportCommand());
       case "--get-routeing":
         return this.getDownloadAndProcessCommand(routingPath, this.getRouteingImportCommand());
       case "--get-nfm64":
         return this.getDownloadAndProcessNFM64Command();
+      case "--get-nfm64-in-transaction":
+        return this.getDownloadAndProcessInTransactionNFM64Command();
       case "--get-idms-fixed-links":
         return this.getDownloadAndProcessIdmsFixedLinksCommand();
       case "--get-idms-group":
@@ -90,6 +96,10 @@ export class Container {
         return this.getCleanupDatabasesCommand();
       case "--backup-fares":
         return this.getBackupDatabaseCommand('fares');
+      case "--backup-timetable":
+        return this.getBackupDatabaseCommand('timetable');
+      case "--backup-routeing":
+        return this.getBackupDatabaseCommand('routeing');
       case "--check-files-availability":
         return this.getCheckAvailableFilesCommand();
       default:
@@ -164,6 +174,25 @@ export class Container {
   }
 
   @memoize
+  public async getTimetableImportCommandWithFallback(): Promise<ImportFeedTransactionalCommand> {
+    return new ImportFeedTransactionalCommand(
+        await this.getDatabaseConnection(),
+        config.timetable,
+        "/tmp/dtd/timetable/"
+    );
+  }
+
+
+  @memoize
+  public async getRouteingImportCommandWithFallback(): Promise<ImportFeedTransactionalCommand> {
+    return new ImportFeedTransactionalCommand(
+        await this.getDatabaseConnection(),
+        config.routeing,
+        "/tmp/dtd/routeing/"
+    );
+  }
+
+  @memoize
   public async getRouteingImportCommand(): Promise<ImportFeedCommand> {
     return new ImportFeedCommand(
       await this.getDatabaseConnection(),
@@ -178,6 +207,15 @@ export class Container {
       await this.getDatabaseConnection(),
       config.timetable,
       "/tmp/dtd/timetable/"
+    );
+  }
+
+  @memoize
+  public async getNFM64ImportCommandWithFallback(): Promise<ImportFeedTransactionalCommand> {
+    return new ImportFeedTransactionalCommand(
+        await this.getDatabaseConnection(),
+        config.nfm64,
+        "/tmp/dtd/nfm64/"
     );
   }
 
@@ -329,6 +367,15 @@ export class Container {
   }
 
   @memoize
+  private async getDownloadAndProcessInTransactionNFM64Command(): Promise<DownloadAndProcessInTransactionCommand> {
+    return new DownloadAndProcessInTransactionCommand(
+        await this.getDownloadNFM64Command(),
+        await this.getNFM64ImportCommandWithFallback(),
+        await this.getDatabaseConnection()
+    );
+  }
+
+  @memoize
   private async getDownloadAndProcessNFM64Command(): Promise<DownloadAndProcessCommand> {
     return new DownloadAndProcessCommand(
       await this.getDownloadNFM64Command(),
@@ -340,9 +387,9 @@ export class Container {
   @memoize
   private async getDownloadAndProcessIdmsFixedLinksCommand(): Promise<DownloadAndProcessCommand> {
     return new DownloadAndProcessCommand(
-      await this.getDownloadIdmsFixedLinksCommand(),
-      await this.getImportIdmsFixedLinksCommand(),
-      await this.getDatabaseConnection()
+        await this.getDownloadIdmsFixedLinksCommand(),
+        await this.getImportIdmsFixedLinksCommand(),
+        await this.getDatabaseConnection()
     );
   }
 
