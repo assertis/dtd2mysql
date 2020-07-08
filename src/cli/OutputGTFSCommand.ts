@@ -64,6 +64,9 @@ export class OutputGTFSCommand implements CLICommand {
    */
   private async copy(results: object[] | Promise<object[]>, filename: string): Promise<void> {
     const rows = await results;
+    if (rows.length === 0) {
+      throw new Error(`OJP update failed for ${filename} file. Files shouldn't be empty`)
+    }
     const output = this.output.open(this.baseDir + filename);
 
     console.log("Writing " + filename);
