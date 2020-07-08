@@ -76,18 +76,6 @@ CREATE TABLE routes (
   PRIMARY KEY (route_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-/*
-DROP TABLE IF EXISTS shapes;
-CREATE TABLE shapes (
-  shape_id smallint(12) unsigned NOT NULL,
-  shape_pt_lat decimal(8,6) NOT NULL,
-  shape_pt_lon decimal(8,6) NOT NULL,
-  shape_pt_sequence tinyint(3) NOT NULL,
-  shape_dist_traveled varchar(50) DEFAULT NULL,
-  PRIMARY KEY (shape_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-*/
-
 DROP TABLE IF EXISTS stop_times;
 CREATE TABLE stop_times (
   trip_id mediumint(12) unsigned NOT NULL,
