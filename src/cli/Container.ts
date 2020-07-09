@@ -17,12 +17,12 @@ import { GTFSImportCommand } from "./GTFSImportCommand";
 import { nfm64DownloadUrl } from "../../config/nfm64";
 import { DownloadFileCommand } from "./DownloadFileCommand";
 import { PromiseSFTP } from "../sftp/PromiseSFTP";
-import { ImportIdmsFixedLinksCommand } from "./ImportIdmsFixedLinksCommand";
+import { ImportIdmsFixedLinksCommand } from "./idms/ImportIdmsFixedLinksCommand";
 import * as AWS from 'aws-sdk';
 import * as proxy from "proxy-agent";
 import { DownloadFileFromS3Command } from "./DownloadFileFromS3Command";
 import { idmsBucket, idmsFixedLinksFilename, idmsGroupFilename, idmsPrefix, idmsUrl } from "../../config/idms";
-import { ImportIdmsGroupCommand } from "./ImportIdmsGroupCommand";
+import { ImportIdmsGroupCommand } from "./idms/ImportIdmsGroupCommand";
 import {
   OfflineDataProcessor
 } from "../database/OfflineDataProcessor";
@@ -34,6 +34,8 @@ import { S3Storage } from '../backup/S3Storage';
 import {CheckAvailableFilesCommand} from "./CheckAvailableFilesCommand";
 import {faresPath, routingPath, timetablePath} from "../sftp/Paths";
 import {SourceManager} from "../sftp/SourceManager";
+import {ImportIdmsGroupCommandWithFallback} from "./idms/ImportIdmsGroupCommandWithFallback";
+import {ImportIdmsFixedLinksCommandWithFallback} from "./idms/ImportIdmsFixedLinksCommandWithFallback";
 
 export class Container {
 
@@ -88,6 +90,10 @@ export class Container {
         return this.getDownloadAndProcessNFM64Command();
       case "--get-nfm64-in-transaction":
         return this.getDownloadAndProcessInTransactionNFM64Command();
+      case "--get-idms-fixed-links-in-transaction":
+        return this.getDownloadAndProcessInTransactionIdmsFixedLinksCommand();
+      case "--get-idms-group-in-transaction":
+        return this.getDownloadAndProcessInTransactionIdmsGroupCommand();
       case "--get-idms-fixed-links":
         return this.getDownloadAndProcessIdmsFixedLinksCommand();
       case "--get-idms-group":
@@ -225,6 +231,24 @@ export class Container {
       await this.getDatabaseConnection(),
       config.nfm64,
       "/tmp/dtd/nfm64/"
+    );
+  }
+
+  @memoize
+  public async getImportIdmsFixedLinksCommandWithFallback(): Promise<ImportIdmsFixedLinksCommandWithFallback> {
+    return new ImportIdmsFixedLinksCommandWithFallback(
+        await this.getDatabaseConnection(),
+        config.idms,
+        "/tmp/idms/"
+    );
+  }
+
+  @memoize
+  public async getImportIdmsGroupCommandWithFallback(): Promise<ImportIdmsGroupCommandWithFallback> {
+    return new ImportIdmsGroupCommandWithFallback(
+        await this.getDatabaseConnection(),
+        config.idms,
+        "/tmp/idms/"
     );
   }
 
@@ -381,6 +405,24 @@ export class Container {
       await this.getDownloadNFM64Command(),
       await this.getNFM64ImportCommand(),
       await this.getDatabaseConnection()
+    );
+  }
+
+  @memoize
+  private async getDownloadAndProcessInTransactionIdmsFixedLinksCommand(): Promise<DownloadAndProcessInTransactionCommand> {
+    return new DownloadAndProcessInTransactionCommand(
+        await this.getDownloadIdmsFixedLinksCommand(),
+        await this.getImportIdmsFixedLinksCommandWithFallback(),
+        await this.getDatabaseConnection()
+    );
+  }
+
+  @memoize
+  private async getDownloadAndProcessInTransactionIdmsGroupCommand(): Promise<DownloadAndProcessInTransactionCommand> {
+    return new DownloadAndProcessInTransactionCommand(
+        await this.getDownloadIdmsGroupCommand(),
+        await this.getImportIdmsGroupCommandWithFallback(),
+        await this.getDatabaseConnection()
     );
   }
 
