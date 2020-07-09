@@ -36,6 +36,7 @@ import {faresPath, routingPath, timetablePath} from "../sftp/Paths";
 import {SourceManager} from "../sftp/SourceManager";
 import {ImportIdmsGroupCommandWithFallback} from "./idms/ImportIdmsGroupCommandWithFallback";
 import {ImportIdmsFixedLinksCommandWithFallback} from "./idms/ImportIdmsFixedLinksCommandWithFallback";
+import {RollbackDatabaseCommand} from "./RollbackDatabaseCommand";
 
 export class Container {
 
@@ -106,6 +107,16 @@ export class Container {
         return this.getBackupDatabaseCommand('timetable');
       case "--backup-routeing":
         return this.getBackupDatabaseCommand('routeing');
+      case "--backup-ojp":
+        return this.getBackupDatabaseCommand('ojp');
+      case "--rollback-fares":
+        return this.getRollbackDatabaseCommand('fares');
+      case "--rollback-timetable":
+        return this.getRollbackDatabaseCommand('timetable');
+      case "--rollback-routeing":
+        return this.getRollbackDatabaseCommand('routeing');
+      case "--rollback-ojp":
+        return this.getRollbackDatabaseCommand('ojp');
       case "--check-files-availability":
         return this.getCheckAvailableFilesCommand();
       default:
@@ -134,6 +145,21 @@ export class Container {
     return new CheckAvailableFilesCommand(
         faresFileManager,
         timetableFileManager,
+    );
+  }
+
+  @memoize
+  public async getRollbackDatabaseCommand(databaseName: string): Promise<RollbackDatabaseCommand> {
+    const bucketName = process.env.BUCKET_NAME || "";
+    if (bucketName.length === 0) {
+      throw new Error("Please set BUCKET_NAME variable");
+    }
+    return new RollbackDatabaseCommand(
+        databaseName,
+        process.env.DATABASE_USERNAME || "root",
+        process.env.DATABASE_PASSWORD || "",
+        process.env.DATABASE_HOSTNAME || "localhost",
+        new S3Storage(await this.getS3(), bucketName),
     );
   }
 
