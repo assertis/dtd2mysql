@@ -1,4 +1,3 @@
-
 import {Activity, StopTime} from "../file/StopTime";
 import {ScheduleCalendar} from "./ScheduleCalendar";
 import {Trip} from "../file/Trip";
@@ -34,8 +33,35 @@ export class Schedule implements OverlayRecord {
     return this.stopTimes[this.stopTimes.length - 1].stop_id;
   }
 
+  /**
+   * This needs to include all significant fields, otherwise they'll be lost after merging with another schedule.
+   */
   public get hash(): string {
-    return this.tuid + this.stopTimes.map(s => s.stop_id + s.departure_time + s.arrival_time).join("") + this.calendar.binaryDays;
+    return this.stopTimes.map(this.hashStop).join("") +
+      this.tuid +
+      this.rsid +
+      this.calendar.binaryDays +
+      this.mode +
+      this.operator +
+      this.firstClassAvailable +
+      this.reservationFlag +
+      this.activity;
+  }
+
+  /**
+   * This needs to include all significant fields, otherwise they'll be lost after merging with another schedule.
+   */
+  private hashStop(stop: StopTime): string {
+    return stop.arrival_time +
+      stop.departure_time +
+      stop.stop_id +
+      stop.stop_sequence +
+      stop.stop_headsign +
+      stop.pickup_type +
+      stop.drop_off_type +
+      stop.shape_dist_traveled +
+      stop.timepoint +
+      stop.activity;
   }
 
   /**
@@ -44,7 +70,7 @@ export class Schedule implements OverlayRecord {
   public clone(calendar: ScheduleCalendar, scheduleId: number): Schedule {
     return new Schedule(
       scheduleId,
-      this.stopTimes.map(st => Object.assign({}, st, { trip_id: scheduleId })),
+      this.stopTimes.map(st => Object.assign({}, st, {trip_id: scheduleId})),
       this.tuid,
       this.rsid,
       calendar,
@@ -92,7 +118,7 @@ export class Schedule implements OverlayRecord {
   }
 
   private get reservationDescription(): string {
-    switch(this.reservationFlag) {
+    switch (this.reservationFlag) {
       case 'A': return "Reservation mandatory";
       case 'E': return "Reservation for bicycles essential";
       case 'R': return "Reservation recommended";
@@ -126,8 +152,7 @@ export class Schedule implements OverlayRecord {
   }
 
   public stopAt(location: CRS): StopTime {
-    return <StopTime>this.stopTimes.find(s => s.stop_id === location);
+    return <StopTime> this.stopTimes.find(s => s.stop_id === location);
   }
 
 }
-
