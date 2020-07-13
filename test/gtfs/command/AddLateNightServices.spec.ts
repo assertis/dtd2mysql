@@ -39,6 +39,18 @@ describe("AddLateNightServices", () => {
     chai.expect(schedules[2].calendar.runsTo.isSame("20181031")).to.be.true;
   });
 
+  it("ignores schedules with no departure date on first calling point", () => {
+    const baseSchedules = [
+      schedule(1, "A", "2018-10-01", "2018-10-31", STP.Permanent, WEEK_DAYS, [
+        stop(1, "TON", "01:30", null),
+      ]),
+    ];
+
+    const schedules = addLateNightServices(baseSchedules, idGenerator());
+
+    chai.expect(schedules.length).to.equal(1);
+  });
+
 });
 
 function *idGenerator(): IterableIterator<number> {
