@@ -84,11 +84,11 @@ describe("ApplyAssociations", () => {
 const ALL_DAYS: Days = { 0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1 };
 
 
-export function stop(stopSequence: number, location: CRS, time: string): StopTime {
+export function stop(stopSequence: number, location: CRS, time: string, departureTime?: string): StopTime {
   return {
     trip_id: 1,
     arrival_time: time,
-    departure_time: time + ":30",
+    departure_time: departureTime === undefined ? time + ":30": departureTime,
     stop_id: location,
     stop_sequence: stopSequence,
     stop_headsign: "",
