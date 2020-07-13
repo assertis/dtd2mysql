@@ -42,7 +42,7 @@ describe("AddLateNightServices", () => {
   it("ignores schedules with no departure date on first calling point", () => {
     const baseSchedules = [
       schedule(1, "A", "2018-10-01", "2018-10-31", STP.Permanent, WEEK_DAYS, [
-        stop(1, "TON", "01:30", null),
+        stop(1, "TON", "01:30", undefined),
       ]),
     ];
 
