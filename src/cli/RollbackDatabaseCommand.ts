@@ -23,11 +23,14 @@ export class RollbackDatabaseCommand implements CLICommand {
     const backupFileName = argv[3];
     const filename = "/tmp/" + this.databaseName + "_dump_" + new Date().toISOString() + ".sql";
 
-    console.log(`Downloading file ${backupFileName}`);
-    await this.fetchFile(backupFileName, filename);
+    if (await this.storage.doesFileExists(backupFileName)) {
+      console.log(`Downloading file ${backupFileName}`);
+      await this.fetchFile(backupFileName, filename);
 
-    console.log("Reverting database " + this.databaseName);
-    await this.rollback(filename);
+      console.log("Reverting database " + this.databaseName);
+      await this.rollback(filename);
+    }
+    console.log(`Cannot find file ${backupFileName} in S3 Bucket`);
   }
 
   protected async isRollbackPossible(): Promise<boolean> {
