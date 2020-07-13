@@ -13,6 +13,8 @@ import { MySQLStream, TableIndex } from "../database/MySQLStream";
 import byline = require("byline");
 import streamToPromise = require("stream-to-promise");
 import { MySQLTmpTable } from '../database/MySQLTmpTable';
+import {ImportFeedCommand} from "./ImportFeedCommand";
+import {MySQLTable} from "../database/MySQLTable";
 
 const getExt = filename => path.extname(filename).slice(1).toUpperCase();
 const readFile = filename => byline.createStream(fs.createReadStream(filename, "utf8"));
@@ -129,6 +131,18 @@ export class ImportFeedTransactionalCommand implements CLICommand, ImportFeedTra
 
   private updateLastFile(filename: string): Promise<void> {
     return this.db.query("INSERT INTO log (filename,processed) VALUES (?, NOW())", [filename]);
+  }
+
+  /**
+   * Drop and recreate the tables
+   */
+  protected async setupSchema(file: FeedFile): Promise<void> {
+    await Promise.all(this.schemas(file).map(schema => schema.dropSchema()));
+    await Promise.all(this.schemas(file).map(schema => schema.createSchema()));
+  }
+
+  protected get fileArray(): FeedFile[] {
+    return Object.values(this.files);
   }
 
   /**

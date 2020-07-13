@@ -12,9 +12,8 @@ export class S3Storage implements Storage {
 
   }
 
-
   public async persist(filePath: string): Promise<void> {
-    if (!this.doesBucketExists(this.bucketName)) {
+    if (!(await this.doesBucketExists(this.bucketName))) {
       throw new Error("Failed to persist file " + filePath + ". Bucket '" + this.bucketName + "' does not exists!");
     }
 
@@ -27,10 +26,46 @@ export class S3Storage implements Storage {
     }).promise();
   }
 
+  public async download(filePath: string, filename: string): Promise<string[]> {
+    if (!(await this.doesBucketExists(this.bucketName))) {
+      throw new Error("Failed to download file  " + filePath + ". Bucket '" + this.bucketName + "' does not exists!");
+    }
+    const stream = await this.s3.getObject({
+      Bucket: this.bucketName,
+      Key: filePath
+    }).createReadStream();
+    const file = fs.createWriteStream(filename);
+
+    return await new Promise((resolve, reject) => {
+      stream.pipe(file);
+
+      stream.on('end', () => {
+        file.close();
+        resolve([filename])
+      });
+      stream.on('error', reject);
+    });
+  }
+
   public async doesBucketExists(name: string): Promise<boolean> {
     try {
       await this.s3.headBucket({
         Bucket: name,
+      }).promise();
+      return true;
+    } catch (error) {
+      if (error.statusCode === 404) {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  public async doesFileExists(filePath: string): Promise<boolean> {
+    try {
+      await this.s3.headObject({
+        Bucket: this.bucketName,
+        Key: filePath
       }).promise();
       return true;
     } catch (error) {

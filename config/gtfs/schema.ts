@@ -1,6 +1,6 @@
 export const schema = `
-DROP TABLE IF EXISTS agency;
-CREATE TABLE agency (
+DROP TABLE IF EXISTS _tmp_agency;
+CREATE TABLE _tmp_agency (
   agency_id varchar(100) NOT NULL,
   agency_name varchar(255) NOT NULL,
   agency_url varchar(255) NOT NULL,
@@ -11,8 +11,8 @@ CREATE TABLE agency (
   PRIMARY KEY (agency_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-DROP TABLE IF EXISTS calendar;
-CREATE TABLE calendar (
+DROP TABLE IF EXISTS _tmp_calendar;
+CREATE TABLE _tmp_calendar (
   service_id smallint(12) unsigned NOT NULL,
   monday tinyint(1) unsigned NOT NULL,
   tuesday tinyint(1) unsigned NOT NULL,
@@ -35,16 +35,16 @@ CREATE TABLE calendar (
   KEY sunday (sunday)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-DROP TABLE IF EXISTS calendar_dates;
-CREATE TABLE calendar_dates (
+DROP TABLE IF EXISTS _tmp_calendar_dates;
+CREATE TABLE _tmp_calendar_dates (
   service_id smallint(12) unsigned NOT NULL,
   date date NOT NULL,
   exception_type tinyint(2) unsigned NOT NULL,
   PRIMARY KEY (service_id, date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-DROP TABLE IF EXISTS links;
-CREATE TABLE links (
+DROP TABLE IF EXISTS _tmp_links;
+CREATE TABLE _tmp_links (
   from_stop_id varchar(100) NOT NULL,
   to_stop_id varchar(100) NOT NULL,
   mode VARCHAR (15) NOT NULL,
@@ -62,8 +62,8 @@ CREATE TABLE links (
   sunday tinyint(1) unsigned NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-DROP TABLE IF EXISTS routes;
-CREATE TABLE routes (
+DROP TABLE IF EXISTS _tmp_routes;
+CREATE TABLE _tmp_routes (
   route_id varchar(100) NOT NULL,
   agency_id varchar(100) DEFAULT NULL,
   route_short_name varchar(50) NOT NULL,
@@ -76,8 +76,8 @@ CREATE TABLE routes (
   PRIMARY KEY (route_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-DROP TABLE IF EXISTS stop_times;
-CREATE TABLE stop_times (
+DROP TABLE IF EXISTS _tmp_stop_times;
+CREATE TABLE _tmp_stop_times (
   trip_id mediumint(12) unsigned NOT NULL,
   arrival_time time DEFAULT NULL,
   departure_time time DEFAULT NULL,
@@ -95,8 +95,8 @@ CREATE TABLE stop_times (
   KEY stop_id (stop_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-DROP TABLE IF EXISTS stops;
-CREATE TABLE stops (
+DROP TABLE IF EXISTS _tmp_stops;
+CREATE TABLE _tmp_stops (
   stop_id varchar(100) NOT NULL,
   stop_code varchar(50) DEFAULT NULL,
   stop_name varchar(255) NOT NULL,
@@ -112,8 +112,8 @@ CREATE TABLE stops (
   PRIMARY KEY (stop_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-DROP TABLE IF EXISTS transfers;
-CREATE TABLE transfers (
+DROP TABLE IF EXISTS _tmp_transfers;
+CREATE TABLE _tmp_transfers (
   from_stop_id varchar(100) NOT NULL,
   to_stop_id varchar(100) NOT NULL,
   transfer_type tinyint(1) unsigned NOT NULL,
@@ -121,8 +121,8 @@ CREATE TABLE transfers (
   PRIMARY KEY (from_stop_id, to_stop_id, transfer_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-DROP TABLE IF EXISTS trips;
-CREATE TABLE trips (
+DROP TABLE IF EXISTS _tmp_trips;
+CREATE TABLE _tmp_trips (
   route_id varchar(255) NOT NULL,
   service_id smallint(12) unsigned NOT NULL,
   trip_id mediumint(12) unsigned NOT NULL,
