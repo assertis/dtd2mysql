@@ -201,7 +201,8 @@ export class Container {
     return new ImportFeedTransactionalCommand(
       await this.getDatabaseConnection(),
       config.fares,
-      "/tmp/dtd/fares/"
+      "/tmp/dtd/fares/",
+        []
     );
   }
 
@@ -210,7 +211,8 @@ export class Container {
     return new ImportFeedTransactionalCommand(
         await this.getDatabaseConnection(),
         config.timetable,
-        "/tmp/dtd/timetable/"
+        "/tmp/dtd/timetable/",
+        config.sanityChecks.timetable
     );
   }
 
@@ -220,7 +222,8 @@ export class Container {
     return new ImportFeedTransactionalCommand(
         await this.getDatabaseConnection(),
         config.routeing,
-        "/tmp/dtd/routeing/"
+        "/tmp/dtd/routeing/",
+        []
     );
   }
 
@@ -247,7 +250,8 @@ export class Container {
     return new ImportFeedTransactionalCommand(
         await this.getDatabaseConnection(),
         config.nfm64,
-        "/tmp/dtd/nfm64/"
+        "/tmp/dtd/nfm64/",
+        []
     );
   }
 
@@ -265,7 +269,8 @@ export class Container {
     return new ImportIdmsFixedLinksCommandWithFallback(
         await this.getDatabaseConnection(),
         config.idms,
-        "/tmp/idms/"
+        "/tmp/idms/",
+        []
     );
   }
 
@@ -274,7 +279,8 @@ export class Container {
     return new ImportIdmsGroupCommandWithFallback(
         await this.getDatabaseConnection(),
         config.idms,
-        "/tmp/idms/"
+        "/tmp/idms/",
+        []
     );
   }
 

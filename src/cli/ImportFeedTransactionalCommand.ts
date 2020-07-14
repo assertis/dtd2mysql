@@ -22,6 +22,8 @@ const readFile = filename => byline.createStream(fs.createReadStream(filename, "
 export interface ImportFeedTransactionalCommandInterface {
   doImport(filePaths: string[]): Promise<void>;
 
+  sanityChecks(): Promise<void>;
+
   commit(): Promise<void>;
 
   rollback(): Promise<void>;
@@ -40,7 +42,8 @@ export class ImportFeedTransactionalCommand implements CLICommand, ImportFeedTra
   constructor(
     protected readonly db: DatabaseConnection,
     protected readonly files: FeedConfig,
-    protected readonly tmpFolder: string
+    protected readonly tmpFolder: string,
+    protected readonly sanityChecksList: string[]
   ) {
   }
 
@@ -63,10 +66,19 @@ export class ImportFeedTransactionalCommand implements CLICommand, ImportFeedTra
   public async doImport(filePaths: string[]): Promise<void> {
     for (const filePath of filePaths) {
       await this.importSingleFile(filePath);
+      if (this.lastProcessedFile !== null) {
+        await this.updateLastFile(this.lastProcessedFile);
+      }
     }
 
-    if (this.lastProcessedFile !== null) {
-      await this.updateLastFile(this.lastProcessedFile);
+  }
+
+  public async sanityChecks(): Promise<void> {
+    for(const check in this.sanityChecksList) {
+      const [[result]] = await this.db.query(this.sanityChecksList[check]);
+      if (result !== undefined && result.length > 0) {
+        throw new Error(`Sanity check failure =>  ${check} `);
+      }
     }
   }
 
@@ -92,7 +104,6 @@ export class ImportFeedTransactionalCommand implements CLICommand, ImportFeedTra
     new AdmZip(filePath).extractAllTo(this.tmpFolder);
 
     const zipName = path.basename(filePath);
-
     // if the file is a not an incremental, reset the database schema
     const isIncremental = zipName.charAt(4) === "C";
 
@@ -107,7 +118,6 @@ export class ImportFeedTransactionalCommand implements CLICommand, ImportFeedTra
                         .map(filename => this.writeFileData(filename, isIncremental)));
 
     await Promise.all(Object.values(this.index).map(table => table.flushAll()));
-
     this.lastProcessedFile = zipName;
   }
 
