@@ -104,7 +104,6 @@ export class ImportFeedTransactionalCommand implements CLICommand, ImportFeedTra
     new AdmZip(filePath).extractAllTo(this.tmpFolder);
 
     const zipName = path.basename(filePath);
-    console.log(zipName);
     // if the file is a not an incremental, reset the database schema
     const isIncremental = zipName.charAt(4) === "C";
 
