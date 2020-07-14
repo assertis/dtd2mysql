@@ -126,7 +126,7 @@ export class ImportFeedTransactionalCommand implements CLICommand, ImportFeedTra
    * Set the last schedule ID in the CFA record
    */
   private async setLastScheduleId(): Promise<void> {
-    const [[lastSchedule]] = await this.db.query("SELECT id FROM schedule ORDER BY id desc LIMIT 1");
+    const [[lastSchedule]] = await this.db.query("SELECT id FROM _tmp_schedule ORDER BY id desc LIMIT 1");
     const lastId = lastSchedule ? lastSchedule.id : 0;
     const cfaFile = this.files["CFA"] as MultiRecordFile;
     const bsRecord = cfaFile.records["BS"] as RecordWithManualIdentifier;
