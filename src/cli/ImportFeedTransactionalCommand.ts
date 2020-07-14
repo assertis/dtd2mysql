@@ -13,8 +13,6 @@ import { MySQLStream, TableIndex } from "../database/MySQLStream";
 import byline = require("byline");
 import streamToPromise = require("stream-to-promise");
 import { MySQLTmpTable } from '../database/MySQLTmpTable';
-import {ImportFeedCommand} from "./ImportFeedCommand";
-import {MySQLTable} from "../database/MySQLTable";
 
 const getExt = filename => path.extname(filename).slice(1).toUpperCase();
 const readFile = filename => byline.createStream(fs.createReadStream(filename, "utf8"));
@@ -43,7 +41,7 @@ export class ImportFeedTransactionalCommand implements CLICommand, ImportFeedTra
     protected readonly db: DatabaseConnection,
     protected readonly files: FeedConfig,
     protected readonly tmpFolder: string,
-    protected readonly sanityChecksList: string[]
+    protected readonly sanityChecksList: {}
   ) {
   }
 
