@@ -13,12 +13,10 @@ export class DownloadCommand implements CLICommand {
    */
   public async run(argv: string[]): Promise<string[]> {
     const outputDirectory = argv[3] || "/tmp/";
-    const [remoteFiles, lastProcessedFile] = await Promise.all([
-      this.sourceManager.getRemoteFiles(this.directory),
+    const [files, lastProcessedFile] = await Promise.all([
+      this.sourceManager.getFilesToProcess(this.directory),
       this.sourceManager.getLastProcessedFile()
     ]);
-
-    const files = this.sourceManager.getFilesToProcess(remoteFiles, lastProcessedFile);
 
     if (files.length > 0) {
       console.log(`Downloading ${files.length} feed file(s)`);
