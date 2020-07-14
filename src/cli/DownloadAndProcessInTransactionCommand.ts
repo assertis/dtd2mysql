@@ -19,6 +19,7 @@ export class DownloadAndProcessInTransactionCommand implements CLICommand {
 
     try {
       await this.process.doImport(files);
+      await this.process.sanityChecks();
       await this.process.commit();
     } catch (err) {
       await this.process.rollback();

@@ -22,6 +22,8 @@ const readFile = filename => byline.createStream(fs.createReadStream(filename, "
 export interface ImportFeedTransactionalCommandInterface {
   doImport(filePaths: string[]): Promise<void>;
 
+  sanityChecks(): Promise<void>;
+
   commit(): Promise<void>;
 
   rollback(): Promise<void>;
@@ -40,7 +42,8 @@ export class ImportFeedTransactionalCommand implements CLICommand, ImportFeedTra
   constructor(
     protected readonly db: DatabaseConnection,
     protected readonly files: FeedConfig,
-    protected readonly tmpFolder: string
+    protected readonly tmpFolder: string,
+    protected readonly sanityChecksList: string[]
   ) {
   }
 
@@ -67,6 +70,15 @@ export class ImportFeedTransactionalCommand implements CLICommand, ImportFeedTra
 
     if (this.lastProcessedFile !== null) {
       await this.updateLastFile(this.lastProcessedFile);
+    }
+  }
+
+  public async sanityChecks(): Promise<void> {
+    for(const check of this.sanityChecksList) {
+      const [[result]] = await this.db.query(check);
+      if (result !== undefined && result.length > 0) {
+        throw new Error(`Sanity check failure =>  ${check} results are => ${JSON.stringify(result)}`);
+      }
     }
   }
 
