@@ -66,11 +66,11 @@ export class ImportFeedTransactionalCommand implements CLICommand, ImportFeedTra
   public async doImport(filePaths: string[]): Promise<void> {
     for (const filePath of filePaths) {
       await this.importSingleFile(filePath);
+      if (this.lastProcessedFile !== null) {
+        await this.updateLastFile(this.lastProcessedFile);
+      }
     }
 
-    if (this.lastProcessedFile !== null) {
-      await this.updateLastFile(this.lastProcessedFile);
-    }
   }
 
   public async sanityChecks(): Promise<void> {
@@ -104,7 +104,7 @@ export class ImportFeedTransactionalCommand implements CLICommand, ImportFeedTra
     new AdmZip(filePath).extractAllTo(this.tmpFolder);
 
     const zipName = path.basename(filePath);
-
+    console.log(zipName);
     // if the file is a not an incremental, reset the database schema
     const isIncremental = zipName.charAt(4) === "C";
 
@@ -119,7 +119,6 @@ export class ImportFeedTransactionalCommand implements CLICommand, ImportFeedTra
                         .map(filename => this.writeFileData(filename, isIncremental)));
 
     await Promise.all(Object.values(this.index).map(table => table.flushAll()));
-
     this.lastProcessedFile = zipName;
   }
 
