@@ -2,40 +2,34 @@ import {CLICommand} from "./CLICommand";
 import {faresPath, timetablePath} from "../sftp/Paths";
 import {SourceManager} from "../sftp/SourceManager";
 
-export class CheckAvailableFilesCommand implements CLICommand  {
+export class CheckAvailableFilesCommand implements CLICommand {
 
-    public constructor(
-        private readonly faresSource: SourceManager,
-        private readonly timetableSource: SourceManager
-    ) {}
+  public constructor(
+    private readonly faresSource: SourceManager,
+    private readonly timetableSource: SourceManager
+  ) {
+  }
 
-    public async run(argv: string[]): Promise<any> {
-        let lastProcessedFile, allFiles;
-        // Fares
-        lastProcessedFile = await this.faresSource.getLastProcessedFile();
-        allFiles = await this.faresSource.getRemoteFiles(faresPath);
-        const fares = await this.faresSource.getFilesToProcess(allFiles, lastProcessedFile);
-        // Timetables
-        lastProcessedFile = await this.timetableSource.getLastProcessedFile();
-        allFiles = await this.timetableSource.getRemoteFiles(timetablePath);
-        const timetables = await this.timetableSource.getFilesToProcess(allFiles, lastProcessedFile);
+  public async run(argv: string[]): Promise<any> {
+    const fares = await this.faresSource.getFilesToProcess(faresPath);
+    const timetables = await this.timetableSource.getFilesToProcess(timetablePath);
 
-        if(fares.length > 0 && timetables.length > 0) {
-            await this.end();
-            console.log("Process the data");
-        } else {
-            console.log("No available files to process");
-            await this.end();
-            /**
-             * We return exit code to stop executing any other command after check availability.
-             */
-            process.exit(500);
-        }
+    if (fares.length > 0 && timetables.length > 0) {
+      await this.end();
+      console.log("Process the data");
+    } else {
+      console.log("No available files to process");
+      await this.end();
+      /**
+       * We return exit code to stop executing any other command after check availability.
+       */
+      process.exit(500);
     }
+  }
 
 
-    private async end() {
-        await this.faresSource.end();
-        await this.timetableSource.end();
-    }
+  private async end() {
+    await this.faresSource.end();
+    await this.timetableSource.end();
+  }
 }
