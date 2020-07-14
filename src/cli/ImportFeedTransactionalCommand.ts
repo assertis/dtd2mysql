@@ -74,10 +74,10 @@ export class ImportFeedTransactionalCommand implements CLICommand, ImportFeedTra
   }
 
   public async sanityChecks(): Promise<void> {
-    for(const check of this.sanityChecksList) {
-      const [[result]] = await this.db.query(check);
+    for(const check in this.sanityChecksList) {
+      const [[result]] = await this.db.query(this.sanityChecksList[check]);
       if (result !== undefined && result.length > 0) {
-        throw new Error(`Sanity check failure =>  ${check} results are => ${JSON.stringify(result)}`);
+        throw new Error(`Sanity check failure =>  ${check} `);
       }
     }
   }
@@ -125,7 +125,7 @@ export class ImportFeedTransactionalCommand implements CLICommand, ImportFeedTra
    * Set the last schedule ID in the CFA record
    */
   private async setLastScheduleId(): Promise<void> {
-    const [[lastSchedule]] = await this.db.query("SELECT id FROM _tmp_schedule ORDER BY id desc LIMIT 1");
+    const [[lastSchedule]] = await this.db.query("SELECT id FROM schedule ORDER BY id desc LIMIT 1");
     const lastId = lastSchedule ? lastSchedule.id : 0;
     const cfaFile = this.files["CFA"] as MultiRecordFile;
     const bsRecord = cfaFile.records["BS"] as RecordWithManualIdentifier;
