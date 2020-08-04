@@ -71,7 +71,7 @@ export class MySQLTmpTable extends MySQLTable implements Table {
    * Drop tmp table and forget about it.
    */
   public async revert(): Promise<void> {
-    console.log(`Dropping table ${tableName}`);
+    console.log(`Dropping table ${this.tableName}`);
     await this.db.query('DROP TABLE IF EXISTS`' + this.tableName + '`');
   }
 
