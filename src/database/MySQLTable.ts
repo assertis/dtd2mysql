@@ -89,10 +89,13 @@ export class MySQLTable implements Table {
    * Query with retry. Sometimes locking errors occur
    */
   protected async queryWithRetry(type: RecordAction, rows: ParsedRecord[], numRetries: number = 3): Promise<void> {
+    console.log('Querying ' + type);
+
     try {
       await this.query(type, rows);
     } catch (err) {
       if (err.errno === 1213 && numRetries > 0) {
+        console.log('Re-trying querying ' + type);
         return this.queryWithRetry(type, rows, numRetries - 1);
       } else {
         throw err;
