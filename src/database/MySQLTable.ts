@@ -60,6 +60,8 @@ export class MySQLTable implements Table {
     if (rows.length > 0) {
       this.buffer[type] = [];
 
+      console.log(`Flushing ${rows.length} rows of ${type} in ${this.tableName}`);
+
       return this.queryWithRetry(type, rows);
     }
   }
@@ -89,13 +91,11 @@ export class MySQLTable implements Table {
    * Query with retry. Sometimes locking errors occur
    */
   protected async queryWithRetry(type: RecordAction, rows: ParsedRecord[], numRetries: number = 3): Promise<void> {
-    console.log('Querying ' + type);
-
     try {
       await this.query(type, rows);
     } catch (err) {
       if (err.errno === 1213 && numRetries > 0) {
-        console.log('Re-trying querying ' + type);
+        console.log(`Re-trying ${rows.length} rows of ${type} in ${this.tableName}`);
         return this.queryWithRetry(type, rows, numRetries - 1);
       } else {
         throw err;

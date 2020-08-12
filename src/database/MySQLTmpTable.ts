@@ -60,7 +60,7 @@ export class MySQLTmpTable extends MySQLTable implements Table {
     } catch (e) {
       console.error(`Persisting failed ${this.tableName}, rolling back`);
       await this.db.query('ROLLBACK');
-      console.error(`Rolled back ${this.tableName}`);
+      console.info(`Rolled back ${this.tableName}`);
       throw e;
     }
     // revert to default InnoDB value.
