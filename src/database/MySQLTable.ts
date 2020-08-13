@@ -60,6 +60,8 @@ export class MySQLTable implements Table {
     if (rows.length > 0) {
       this.buffer[type] = [];
 
+      console.log(`Flushing ${rows.length} rows of ${type} in ${this.tableName}`);
+
       return this.queryWithRetry(type, rows);
     }
   }
@@ -93,6 +95,7 @@ export class MySQLTable implements Table {
       await this.query(type, rows);
     } catch (err) {
       if (err.errno === 1213 && numRetries > 0) {
+        console.log(`Re-trying ${rows.length} rows of ${type} in ${this.tableName}`);
         return this.queryWithRetry(type, rows, numRetries - 1);
       } else {
         throw err;

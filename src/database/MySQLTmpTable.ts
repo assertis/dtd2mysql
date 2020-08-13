@@ -1,5 +1,5 @@
 import { DatabaseConnection } from "./DatabaseConnection";
-import { ParsedRecord, RecordAction } from "../feed/record/Record";
+import { RecordAction } from "../feed/record/Record";
 import { MySQLTable } from './MySQLTable';
 import { Table } from './Table';
 
@@ -48,7 +48,7 @@ export class MySQLTmpTable extends MySQLTable implements Table {
    * overwrite original table with _tmp_ table data.
    */
   public async persist(): Promise<void> {
-    console.log("persisting table " + this.tableName);
+    console.log(`Persisting ${this.tableName} into ${this.originalTableName}`);
     // to speed up table copying
     await this.db.query('SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED');
     try {
@@ -58,8 +58,9 @@ export class MySQLTmpTable extends MySQLTable implements Table {
       await this.db.query('DROP TABLE `' + this.tableName + '`');
       await this.db.query('COMMIT');
     } catch (e) {
+      console.error(`Persisting failed ${this.tableName}, rolling back`);
       await this.db.query('ROLLBACK');
-      console.log("Persisting failed " + this.tableName);
+      console.info(`Rolled back ${this.tableName}`);
       throw e;
     }
     // revert to default InnoDB value.
@@ -70,6 +71,7 @@ export class MySQLTmpTable extends MySQLTable implements Table {
    * Drop tmp table and forget about it.
    */
   public async revert(): Promise<void> {
+    console.log(`Dropping table ${this.tableName}`);
     await this.db.query('DROP TABLE IF EXISTS`' + this.tableName + '`');
   }
 
@@ -94,9 +96,11 @@ export class MySQLTmpTable extends MySQLTable implements Table {
       return;
     }
 
+    console.log(`Creating table ${this.tableName} from ${this.originalTableName}`);
     await this.db.query('CREATE TABLE `' + this.tableName + '` LIKE `' + this.originalTableName + '`');
     // _tmp table should be populated with "old" data only in case of incremental update.
     if (this.isIncremental) {
+      console.log(`Copying data from ${this.originalTableName} to ${this.tableName}`);
       await this.db.query('INSERT INTO `' + this.tableName + '` SELECT * FROM `' + this.originalTableName + '`');
     }
     this.tmpExists = true;
@@ -110,6 +114,7 @@ export class MySQLTmpTable extends MySQLTable implements Table {
   }
 
   protected async truncateTable(tableName: string): Promise<void> {
+    console.log(`Truncating table ${tableName}`);
     await this.db.query("TRUNCATE `" + tableName + "`");
   }
 

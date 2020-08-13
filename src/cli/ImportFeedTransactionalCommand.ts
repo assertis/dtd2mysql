@@ -157,6 +157,8 @@ export class ImportFeedTransactionalCommand implements CLICommand, ImportFeedTra
    * Process the records inside the given file
    */
   private async writeFileData(filename: string, isIncremental: boolean): Promise<any> {
+    console.log(`Processing ${filename}`);
+
     const file = this.getFeedFile(filename);
     const tables = await this.tables(file, isIncremental);
     const tableStream = new MySQLStream(filename, file, tables);
