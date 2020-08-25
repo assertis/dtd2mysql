@@ -14,7 +14,8 @@ export class CheckAvailableFilesCommand implements CLICommand {
     const fares = await this.faresSource.getFilesToProcess(faresPath);
     const timetables = await this.timetableSource.getFilesToProcess(timetablePath);
 
-    if (fares.length > 0 && timetables.length > 0) {
+    // If at least in one source data are available process them
+    if (fares.length > 0 || timetables.length > 0) {
       await this.end();
       console.log("Process the data");
     } else {
