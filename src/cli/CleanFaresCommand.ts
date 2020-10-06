@@ -44,7 +44,8 @@ export class CleanFaresCommand implements CLICommand {
 
   private readonly indexes = [
     "CREATE INDEX fare_flow_id ON fare (flow_id)",
-    "ALTER TABLE toc_specific_ticket ADD COLUMN IF NOT EXISTS hash VARCHAR(255); UPDATE toc_specific_ticket SET hash=COALESCE(ticket_code, restriction_code, restriction_flag, direction, end_date);",
+    "ALTER TABLE toc_specific_ticket ADD COLUMN IF NOT EXISTS `hash` VARCHAR(255) DEFAULT NULL;" +
+    "UPDATE toc_specific_ticket SET `hash`=COALESCE(ticket_code, restriction_code, restriction_flag, direction, end_date);",
     "CREATE INDEX toc_specific_ticket_toc_key ON toc_specific_ticket (hash)"
   ];
 
@@ -64,9 +65,9 @@ export class CleanFaresCommand implements CLICommand {
       await Promise.all([
         this.setNetworkAreaRestrictionCodes(),
         this.clean(),
-        this.applyRestrictionDates()
+        this.applyRestrictionDates(),
+        this.index()
       ]);
-      await this.index();
     }
     catch (err) {
       console.error(err);
@@ -81,13 +82,16 @@ export class CleanFaresCommand implements CLICommand {
   }
 
   private async index(): Promise<void> {
-    this.indexes.map(async q => {
-      try {
-        await this.executeWithRetry(q, 1);
-      } catch(err) {
-        console.log('Index exist');
-      }
-    });
+    await Promise.all(
+        this.indexes.map(async q => {
+          try {
+            await this.queryWithRetry(q, 1);
+          } catch(err) {
+            console.log(err);
+          }
+        })
+    );
+
     console.log("Required indexes added");
   }
 
