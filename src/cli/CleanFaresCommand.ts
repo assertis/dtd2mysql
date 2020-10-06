@@ -44,7 +44,7 @@ export class CleanFaresCommand implements CLICommand {
 
   private readonly indexes = [
     "CREATE INDEX fare_flow_id ON fare (flow_id)",
-    "ALTER TABLE toc_specific_ticket ADD COLUMN IF NOT EXISTS `hash` VARCHAR(255) DEFAULT NULL;" +
+    "ALTER TABLE toc_specific_ticket ADD COLUMN `hash` VARCHAR(255) DEFAULT NULL;" +
     "UPDATE toc_specific_ticket SET `hash`=COALESCE(ticket_code, restriction_code, restriction_flag, direction, end_date);",
     "CREATE INDEX toc_specific_ticket_toc_key ON toc_specific_ticket (hash)"
   ];
