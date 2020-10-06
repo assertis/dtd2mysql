@@ -266,8 +266,8 @@ const ticketCalendar = new FixedWidthRecord(
     "cal_type": new TextField(7, 1),
     "route_code": new ZeroFillIntField(8, 5, true),
     "country_code": new TextField(13, 1, false, []),
-    "date_from": new TextField(14, 4),
-    "date_to": new TextField(18, 4),
+    "date_from": new TextField(14, 4), //0101
+    "date_to": new TextField(18, 4), //0112
     "monday": new BooleanField(22),
     "tuesday": new BooleanField(23),
     "wednesday": new BooleanField(24),
