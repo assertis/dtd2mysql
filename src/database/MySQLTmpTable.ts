@@ -12,19 +12,15 @@ const TMP_PREFIX = "_tmp_";
  */
 export class MySQLTmpTable extends MySQLTable implements Table {
 
-  private readonly originalTableName;
   private tmpExists = false;
-  private readonly isIncremental;
 
   constructor(
     db: DatabaseConnection,
-    tableName: string,
-    isIncremental: boolean,
+    private readonly originalTableName: string,
+    private readonly isIncremental: boolean,
     flushLimit: number = 5000
   ) {
-    super(db, TMP_PREFIX + tableName, flushLimit);
-    this.originalTableName = tableName;
-    this.isIncremental = isIncremental
+    super(db, TMP_PREFIX + originalTableName, flushLimit);
   }
 
   public static async create(

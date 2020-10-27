@@ -132,6 +132,8 @@ CREATE TABLE _tmp_trips (
   wheelchair_accessible tinyint(1) unsigned DEFAULT NULL,
   bikes_allowed tinyint(1) unsigned DEFAULT NULL,
   reservation_flag varchar(2) DEFAULT NULL,
+  stp CHAR(1),
+  runs_from DATE NOT NULL,
   PRIMARY KEY (trip_id),
   KEY service_id (service_id),
   KEY trip (trip_headsign)

@@ -1,6 +1,5 @@
-import { CLICommand } from "./CLICommand";
-import { DatabaseConnection } from "../database/DatabaseConnection";
-import { ImportFeedTransactionalCommandInterface } from './ImportFeedTransactionalCommand';
+import {DatabaseConnection} from "../database/DatabaseConnection";
+import {CLICommand, FileProvider, ImportFeedTransactionalCommandInterface} from ".";
 
 export class DownloadAndProcessInTransactionCommand implements CLICommand {
 
@@ -29,8 +28,4 @@ export class DownloadAndProcessInTransactionCommand implements CLICommand {
     return this.process.end();
   }
 
-}
-
-export interface FileProvider {
-  run(args: any[]): Promise<string[]>;
 }

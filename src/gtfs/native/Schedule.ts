@@ -96,7 +96,9 @@ export class Schedule implements OverlayRecord {
       direction_id: 0,
       wheelchair_accessible: 0,
       bikes_allowed: 0,
-      reservation_flag: this.reservationFlag
+      reservation_flag: this.reservationFlag,
+      stp: this.stp,
+      runs_from: this.calendar.runsFrom.format('YYYY-MM-DD'),
     };
   }
 

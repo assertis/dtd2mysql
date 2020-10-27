@@ -48,7 +48,7 @@ describe("AddLateNightServices", () => {
 
     const schedules = addLateNightServices(baseSchedules, idGenerator());
 
-    chai.expect(schedules.length).to.equal(1);
+    chai.expect(schedules.length).to.equal(2);
   });
 
 });
