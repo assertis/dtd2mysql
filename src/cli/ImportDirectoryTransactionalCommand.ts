@@ -3,7 +3,6 @@ import * as memoize from "memoized-class-decorator";
 import fs = require("fs-extra");
 import byline = require("byline");
 import streamToPromise = require("stream-to-promise");
-
 import {CLICommand, ImportFeedTransactionalCommandInterface} from ".";
 import {FeedConfig} from "../../config";
 import {FeedFile} from "../feed/file/FeedFile";

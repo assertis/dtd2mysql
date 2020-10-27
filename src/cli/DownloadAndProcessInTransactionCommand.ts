@@ -1,7 +1,5 @@
-import { CLICommand } from "./CLICommand";
-import { DatabaseConnection } from "../database/DatabaseConnection";
-import { ImportFeedTransactionalCommandInterface } from './ImportFeedTransactionalCommand';
-import {FileProvider} from "./index";
+import {DatabaseConnection} from "../database/DatabaseConnection";
+import {CLICommand, FileProvider, ImportFeedTransactionalCommandInterface} from ".";
 
 export class DownloadAndProcessInTransactionCommand implements CLICommand {
 
