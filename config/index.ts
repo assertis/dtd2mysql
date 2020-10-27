@@ -3,6 +3,7 @@ import {FeedFile} from "../src/feed/file/FeedFile";
 import fares from "./fares";
 import routeing from "./routeing";
 import timetable from "./timetable";
+import timetableExtra from "./timetable/extra";
 import nfm64 from "./nfm64";
 import idms from "./idms";
 import timetableSanityChecks from "./timetable/sanityChecks";
@@ -17,6 +18,7 @@ export default {
   timetable,
   nfm64,
   idms,
+  timetableExtra,
   sanityChecks: {
     timetable: timetableSanityChecks
   }

@@ -1,7 +1,7 @@
-
 import {CLICommand} from "./CLICommand";
 import { ImportFeedCommand } from "./ImportFeedCommand";
 import {DatabaseConnection} from "../database/DatabaseConnection";
+import {FileProvider} from "./index";
 
 export class DownloadAndProcessWithReplaceCommand implements CLICommand {
 
@@ -29,8 +29,4 @@ export class DownloadAndProcessWithReplaceCommand implements CLICommand {
     return this.process.end();
   }
 
-}
-
-export interface FileProvider {
-  run(args: any[]): Promise<string[]>;
 }

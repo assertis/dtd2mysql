@@ -16,6 +16,9 @@
     "gtfs": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --gtfs",
     "gtfs-import": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --gtfs-import",
     "gtfs-zip": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --gtfs-zip",
+    "download-x-files": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --download-x-files",
+    "x-files": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --get-x-files-in-transaction",
+    "timetable": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --get-timetable-in-transaction",
     "dataVersion": "ts-node ./src/dataVersion.ts",
     "dev": "ts-node ./src/dev.ts"
   },
