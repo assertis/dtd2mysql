@@ -46,6 +46,8 @@ export class ImportDirectoryTransactionalCommand implements CLICommand, ImportFe
    * Extract the zip, set up the schema and do the inserts
    */
   public async doImport(filePaths: string[]): Promise<void> {
+    console.log('Importing using ImportDirectoryTransactionalCommand');
+
     for (const filePath of filePaths) {
       await this.importDirectory(filePath, true);
     }

@@ -229,7 +229,8 @@ export class Container {
     return new ImportFeedCommand(
       await this.getDatabaseConnection(),
       config.timetable,
-      "/tmp/dtd/timetable/"
+      "/tmp/dtd/timetable/",
+      this.getXFilesTmpDirectory(),
     );
   }
 

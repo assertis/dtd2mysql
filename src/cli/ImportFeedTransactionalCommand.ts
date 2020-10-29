@@ -51,6 +51,8 @@ export class ImportFeedTransactionalCommand extends ImportDirectoryTransactional
   }
 
   private async importSingleFile(filePath: string): Promise<void> {
+    console.log('Importing using ImportFeedTransactionalCommand');
+
     console.log(`Extracting ${filePath} to ${this.tmpFolder}`);
     fs.emptyDirSync(this.tmpFolder);
 

@@ -27,7 +27,8 @@ export class ImportFeedCommand implements CLICommand {
   constructor(
     protected readonly db: DatabaseConnection,
     protected readonly files: FeedConfig,
-    protected readonly tmpFolder: string
+    protected readonly tmpFolder: string,
+    private readonly xFilesFolder?: string,
   ) { }
 
   protected get fileArray(): FeedFile[] {
@@ -52,15 +53,18 @@ export class ImportFeedCommand implements CLICommand {
    * Extract the zip, set up the schema and do the inserts
    */
   public async doImport(filePath: string): Promise<void> {
+    console.log('Importing using ImportFeedCommand');
+
     console.log(`Extracting ${filePath} to ${this.tmpFolder}`);
     fs.emptyDirSync(this.tmpFolder);
 
     new AdmZip(filePath).extractAllTo(this.tmpFolder);
 
     const zipName = path.basename(filePath);
+    const isIncremental = zipName.charAt(4) === "C";
 
     // if the file is a not an incremental, reset the database schema
-    if (zipName.charAt(4) !== "C") {
+    if (!isIncremental) {
       await Promise.all(this.fileArray.map(file => this.setupSchema(file)));
       await this.createLastProcessedSchema();
     }
@@ -70,17 +74,32 @@ export class ImportFeedCommand implements CLICommand {
       this.ensureALFExists(zipName.substring(0, zipName.length - 4));
     }
 
-    await Promise.all(
-      fs.readdirSync(this.tmpFolder)
-        .filter(filename => this.getFeedFile(filename))
-        .map(filename => this.processFile(filename))
-    );
+    await this.importDirectory(this.tmpFolder);
 
     if (this.files["CFA"] instanceof MultiRecordFile) {
       await this.removeOrphanStopTimes();
     }
 
     await this.updateLastFile(zipName);
+
+    // We import X-files only with the full update of the timetable feed
+    if (this.xFilesFolder !== undefined && !isIncremental) {
+      console.log(`Importing X-Files from "${this.xFilesFolder}" - is incremental: ${isIncremental ? 'yes' : 'no'}`);
+      await this.importDirectory(this.xFilesFolder);
+    } else {
+      console.log(`Skipping X-Files import from "${this.xFilesFolder}" - is incremental: ${isIncremental ? 'yes' : 'no'}`);
+    }
+  }
+
+  private async importDirectory(path: string): Promise<void> {
+    // no, we can't squeeze those 2 Promise.all() into single one.
+    await Promise.all(
+      fs.readdirSync(path)
+        .filter(filename => this.getFeedFile(filename))
+        .map(filename => this.processFile(filename))
+    );
+
+    await Promise.all(Object.values(this.index).map(table => table.flushAll()));
   }
 
   /**
