@@ -45,7 +45,8 @@ export class Schedule implements OverlayRecord {
       this.operator +
       this.firstClassAvailable +
       this.reservationFlag +
-      this.activity;
+      this.activity +
+      (this.stp === STP.Extra ? STP.Extra : STP.Permanent);
   }
 
   /**
