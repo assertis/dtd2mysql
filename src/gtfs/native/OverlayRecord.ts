@@ -15,10 +15,11 @@ export type TUID = string;
 export type RSID = string;
 
 export enum STP {
-  Permanent = "Previous",
+  Permanent = "P",
   Overlay = "O",
-  New = "Next",
-  Cancellation = "C"
+  New = "N",
+  Cancellation = "C",
+  Extra = "X",
 }
 
 export type IdGenerator = IterableIterator<number>;

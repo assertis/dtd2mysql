@@ -134,7 +134,7 @@ CREATE TABLE _tmp_trips (
   reservation_flag varchar(2) DEFAULT NULL,
   stp CHAR(1),
   runs_from DATE NOT NULL,
-  PRIMARY KEY (trip_id),
+  PRIMARY KEY (trip_id, stp, runs_from),
   KEY service_id (service_id),
   KEY trip (trip_headsign)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`;
