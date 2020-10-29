@@ -70,7 +70,10 @@ export class ImportFeedTransactionalCommand extends ImportDirectoryTransactional
 
     // We import X-files only with the full update of the timetable feed
     if (this.xFilesFolder !== undefined && !isIncremental) {
+      console.log(`Importing X-Files from "${this.xFilesFolder}" - is incremental: ${isIncremental ? 'yes' : 'no'}`);
       await this.importDirectory(this.xFilesFolder, false);
+    } else {
+      console.log(`Skipping X-Files import from "${this.xFilesFolder}" - is incremental: ${isIncremental ? 'yes' : 'no'}`);
     }
   }
 
