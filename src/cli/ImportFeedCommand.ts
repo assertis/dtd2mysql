@@ -96,7 +96,7 @@ export class ImportFeedCommand implements CLICommand {
     await Promise.all(
       fs.readdirSync(path)
         .filter(filename => this.getFeedFile(filename))
-        .map(filename => this.processFile(filename))
+        .map(filename => this.processFile(path, filename))
     );
 
     await Promise.all(Object.values(this.index).map(table => table.flushAll()));
@@ -155,19 +155,19 @@ export class ImportFeedCommand implements CLICommand {
   /**
    * Process the records inside the given file
    */
-  private async processFile(filename: string): Promise<any> {
+  private async processFile(path, filename: string): Promise<any> {
     const file = this.getFeedFile(filename);
     const tables = await this.tables(file);
     const tableStream = new MySQLStream(filename, file, tables);
-    const stream = readFile(this.tmpFolder + filename).pipe(tableStream);
+    const stream = readFile(path + filename).pipe(tableStream);
 
     try {
       await streamToPromise(stream);
 
-      console.log(`Finished processing ${filename}`);
+      console.log(`Finished processing ${path + filename}`);
     }
     catch (err) {
-      console.error(`Error processing ${filename}`);
+      console.error(`Error processing ${path + filename}`);
       console.error(err);
     }
   }
