@@ -87,7 +87,10 @@ export class CleanFaresCommand implements CLICommand {
           try {
             await this.queryWithRetry(q, 1);
           } catch(err) {
-            console.log(err);
+            /**
+             * Ignore errors when indexes exist.
+             * Unfortunately there is no CREATE INDEX IF EXISTS in mySQL
+             */
           }
         })
     );
