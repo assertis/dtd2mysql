@@ -18,7 +18,8 @@ export class CIFRepository {
   constructor(
     private readonly db: DatabaseConnection,
     private readonly stream,
-    private readonly stationCoordinates: StationCoordinates
+    private readonly stationCoordinates: StationCoordinates,
+    private readonly scheduleHorizonMonths: number,
   ) {}
 
   /**
@@ -80,13 +81,25 @@ export class CIFRepository {
     await Promise.all([
       scheduleBuilder.loadSchedules(this.stream.query(`
         SELECT
-          schedule.id AS id, train_uid, retail_train_id, runs_from, runs_to,
-          monday, tuesday, wednesday, thursday, friday, saturday, sunday,
-          crs_code, stp_indicator, public_arrival_time, public_departure_time,
-          IF(train_status="S", "SS", train_category) AS train_category, 
-          IFNULL(scheduled_arrival_time, scheduled_pass_time) AS scheduled_arrival_time, 
-          IFNULL(scheduled_departure_time, scheduled_pass_time) AS scheduled_departure_time,
-          platform, atoc_code, stop_time.id AS stop_id, activity, reservations, train_class
+          schedule.id AS id,
+          schedule.train_uid,
+          schedule.runs_from,
+          schedule.runs_to,
+          schedule.monday, schedule.tuesday, schedule.wednesday, schedule.thursday, schedule.friday, schedule.saturday, schedule.sunday,
+          IF(train_status="S", "SS", schedule.train_category) AS train_category, 
+          schedule.stp_indicator,
+          schedule.reservations,
+          schedule.train_class,
+          schedule_extra.retail_train_id,
+          schedule_extra.atoc_code,
+          stop_time.public_arrival_time,
+          stop_time.public_departure_time,
+          IFNULL(stop_time.scheduled_arrival_time, stop_time.scheduled_pass_time) AS scheduled_arrival_time, 
+          IFNULL(stop_time.scheduled_departure_time, stop_time.scheduled_pass_time) AS scheduled_departure_time,
+          stop_time.id AS stop_id,
+          stop_time.activity,
+          stop_time.platform,
+          ps.crs_code
         FROM schedule
         LEFT JOIN schedule_extra ON schedule.id = schedule_extra.schedule
         LEFT JOIN stop_time ON schedule.id = stop_time.schedule
@@ -95,7 +108,7 @@ export class CIFRepository {
         (
           stop_time.id IS NULL OR crs_code IS NOT NULL
         )
-        AND runs_from < CURDATE() + INTERVAL 3 MONTH
+        AND runs_from < CURDATE() + INTERVAL ${this.scheduleHorizonMonths} MONTH
         AND runs_to >= CURDATE()
         ORDER BY stp_indicator DESC, id, stop_id
       `)),
@@ -108,7 +121,7 @@ export class CIFRepository {
           platform, NULL AS atoc_code, z_stop_time.id AS stop_id, activity, NULL AS reservations, "S" AS train_class
         FROM z_schedule
         JOIN z_stop_time ON z_schedule.id = z_stop_time.z_schedule
-        WHERE runs_from < CURDATE() + INTERVAL 3 MONTH
+        WHERE runs_from < CURDATE() + INTERVAL ${this.scheduleHorizonMonths} MONTH
         AND runs_to >= CURDATE()
         ORDER BY stop_id
       `))

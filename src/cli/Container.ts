@@ -44,6 +44,8 @@ import {
 
 export class Container {
 
+  private readonly GTFSScheduleHorizonMonths = 12;
+
   @memoize
   public getCommand(type: string): Promise<CLICommand> {
     switch (type) {
@@ -342,7 +344,8 @@ export class Container {
       new CIFRepository(
         this.getDatabaseConnection(),
         this.getDatabaseStream(),
-        stationCoordinates
+        stationCoordinates,
+        this.GTFSScheduleHorizonMonths,
       ),
       output
     );
