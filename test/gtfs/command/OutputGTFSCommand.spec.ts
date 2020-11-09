@@ -32,7 +32,8 @@ describe("OutputGTFSCommand", () => {
       new CIFRepository(
         new MockDatabaseConnection(),
         require('mysql2').createPool({}),
-        stationCoordinates
+        stationCoordinates,
+        3,
       ),
       new FileOutput()
     );
