@@ -1,4 +1,3 @@
-
 import {FieldMap, ParsedRecord, Record, RecordAction} from "./Record";
 
 /**
@@ -14,7 +13,8 @@ export class MultiFormatRecord implements Record {
     private readonly recordIdentifierStart: number,
     private readonly recordIdentifierLength: number,
     public readonly indexes: string[] = [],
-    public readonly orderedInserts: boolean = false
+    public readonly orderedInserts: boolean = false,
+    public readonly action: RecordAction = RecordAction.Insert
   ) {}
 
   /**
@@ -24,13 +24,12 @@ export class MultiFormatRecord implements Record {
     const type = line.substr(this.recordIdentifierStart, this.recordIdentifierLength);
     const record = this.records[type];
     const values = { id: null };
-    const action = RecordAction.Insert;
 
     for (const key in record) {
       values[key] = record[key].extract(line.substr(record[key].position, record[key].length));
     }
 
-    return { action, values };
+    return { action: this.action, values, keysValues: values };
   }
 
 }

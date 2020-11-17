@@ -3,8 +3,10 @@ import {FeedFile} from "../src/feed/file/FeedFile";
 import fares from "./fares";
 import routeing from "./routeing";
 import timetable from "./timetable";
+import timetableExtra from "./timetable/extra";
 import nfm64 from "./nfm64";
 import idms from "./idms";
+import timetableSanityChecks from "./timetable/sanityChecks";
 
 export type FeedConfig = {
   [fileExtension: string]: FeedFile
@@ -15,7 +17,11 @@ export default {
   routeing,
   timetable,
   nfm64,
-  idms
+  idms,
+  timetableExtra,
+  sanityChecks: {
+    timetable: timetableSanityChecks
+  }
 };
 
 export function viewsSqlFactory(views: string, databaseWithData: string, orgdb: string): string {

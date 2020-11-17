@@ -1,5 +1,4 @@
 import * as chai from "chai";
-import moment = require("moment");
 import {STP, TUID} from "../../../src/gtfs/native/OverlayRecord";
 import {mergeSchedules} from "../../../src/gtfs/command/MergeSchedules";
 import {applyOverlays} from "../../../src/gtfs/command/ApplyOverlays";
@@ -7,6 +6,7 @@ import {Days, ScheduleCalendar} from "../../../src/gtfs/native/ScheduleCalendar"
 import {StopTime} from "../../../src/gtfs/file/StopTime";
 import {Schedule} from "../../../src/gtfs/native/Schedule";
 import {RouteType} from "../../../src/gtfs/file/Route";
+import moment = require("moment");
 
 describe("MergeSchedules", () => {
 
@@ -37,7 +37,8 @@ export function schedule(id: number,
                          stp: STP = STP.Overlay,
                          days: Days = ALL_DAYS,
                          stops: StopTime[] = [],
-                         mode: RouteType = RouteType.Rail): Schedule {
+                         mode: RouteType = RouteType.Rail,
+                         firstClassAvailable = true): Schedule {
 
   return new Schedule(
     id,
@@ -53,8 +54,8 @@ export function schedule(id: number,
     mode,
     "LN",
     stp,
-    true,
-    true,
+    firstClassAvailable,
+    null,
       ''
   );
 }

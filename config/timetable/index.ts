@@ -7,13 +7,17 @@ import ZTR from "./file/ZTR";
 import ALF from "./file/ALF";
 import CFA from "./file/CFA";
 
+export const xFilesBucket = "ride-data";
+export const xFilesPrefix = "x-files/";
+
 const specification: FeedConfig = {
   "MSN": MSN,
   "FLF": FLF,
   "MCA": MCA,
+  "MCX": MCA,
   "ZTR": ZTR,
   "ALF": ALF,
-  "CFA": CFA
+  "CFA": CFA,
 };
 
 export default specification;

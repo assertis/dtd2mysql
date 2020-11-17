@@ -128,7 +128,7 @@ export class Association implements OverlayRecord {
       assoc.operator,
       assoc.stp,
       assoc.firstClassAvailable,
-      assoc.reservationPossible,
+      assoc.reservationFlag,
       assoc.activity
     )
   }

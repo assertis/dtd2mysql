@@ -1,12 +1,10 @@
-
 import {Activity, StopTime} from "../file/StopTime";
-import {OverlapType, ScheduleCalendar} from "./ScheduleCalendar";
+import {ScheduleCalendar} from "./ScheduleCalendar";
 import {Trip} from "../file/Trip";
 import {Route, RouteType} from "../file/Route";
 import {AgencyID} from "../file/Agency";
 import {CRS} from "../file/Stop";
-import {IdGenerator, OverlayRecord, RSID, STP, TUID} from "./OverlayRecord";
-import * as memoize  from "memoized-class-decorator";
+import {OverlayRecord, RSID, ServiceReservation, STP, TUID} from './OverlayRecord';
 
 /**
  * A CIF schedule (BS record)
@@ -23,7 +21,7 @@ export class Schedule implements OverlayRecord {
     public readonly operator: AgencyID | null,
     public readonly stp: STP,
     public readonly firstClassAvailable: boolean,
-    public readonly reservationPossible: boolean,
+    public readonly reservationFlag: ServiceReservation,
     public readonly activity: Activity
   ) {}
 
@@ -35,8 +33,36 @@ export class Schedule implements OverlayRecord {
     return this.stopTimes[this.stopTimes.length - 1].stop_id;
   }
 
+  /**
+   * This needs to include all significant fields, otherwise they'll be lost after merging with another schedule.
+   */
   public get hash(): string {
-    return this.tuid + this.stopTimes.map(s => s.stop_id + s.departure_time + s.arrival_time).join("") + this.calendar.binaryDays;
+    return this.stopTimes.map(this.hashStop).join("") +
+      this.tuid +
+      this.rsid +
+      this.calendar.binaryDays +
+      this.mode +
+      this.operator +
+      this.firstClassAvailable +
+      this.reservationFlag +
+      this.activity +
+      (this.stp === STP.Extra ? STP.Extra : STP.Permanent);
+  }
+
+  /**
+   * This needs to include all significant fields, otherwise they'll be lost after merging with another schedule.
+   */
+  private hashStop(stop: StopTime): string {
+    return stop.arrival_time +
+      stop.departure_time +
+      stop.stop_id +
+      stop.stop_sequence +
+      stop.stop_headsign +
+      stop.pickup_type +
+      stop.drop_off_type +
+      stop.shape_dist_traveled +
+      stop.timepoint +
+      stop.activity;
   }
 
   /**
@@ -45,7 +71,7 @@ export class Schedule implements OverlayRecord {
   public clone(calendar: ScheduleCalendar, scheduleId: number): Schedule {
     return new Schedule(
       scheduleId,
-      this.stopTimes.map(st => Object.assign({}, st, { trip_id: scheduleId })),
+      this.stopTimes.map(st => Object.assign({}, st, {trip_id: scheduleId})),
       this.tuid,
       this.rsid,
       calendar,
@@ -53,7 +79,7 @@ export class Schedule implements OverlayRecord {
       this.operator,
       this.stp,
       this.firstClassAvailable,
-      this.reservationPossible,
+      this.reservationFlag,
       this.activity
     );
   }
@@ -70,7 +96,10 @@ export class Schedule implements OverlayRecord {
       trip_short_name: this.rsid,
       direction_id: 0,
       wheelchair_accessible: 0,
-      bikes_allowed: 0
+      bikes_allowed: 0,
+      reservation_flag: this.reservationFlag,
+      stp: this.stp,
+      runs_from: this.calendar.runsFrom.format('YYYY-MM-DD'),
     };
   }
 
@@ -91,6 +120,16 @@ export class Schedule implements OverlayRecord {
     };
   }
 
+  private get reservationDescription(): string {
+    switch (this.reservationFlag) {
+      case 'A': return "Reservation mandatory";
+      case 'E': return "Reservation for bicycles essential";
+      case 'R': return "Reservation recommended";
+      case 'S': return "Reservation possible";
+      default: return "Reservation not possible"
+    }
+  }
+
   private get modeDescription(): string {
     switch (this.mode) {
       case RouteType.Rail: return "Train";
@@ -107,10 +146,6 @@ export class Schedule implements OverlayRecord {
     return this.firstClassAvailable ? "First class available" : "Standard class only";
   }
 
-  private get reservationDescription(): string {
-    return this.reservationPossible ? "Reservation possible" : "Reservation not possible";
-  }
-
   public before(location: CRS): StopTime[] {
     return this.stopTimes.slice(0, this.stopTimes.findIndex(s => s.stop_id === location));
   }
@@ -120,8 +155,7 @@ export class Schedule implements OverlayRecord {
   }
 
   public stopAt(location: CRS): StopTime {
-    return <StopTime>this.stopTimes.find(s => s.stop_id === location);
+    return <StopTime> this.stopTimes.find(s => s.stop_id === location);
   }
 
 }
-

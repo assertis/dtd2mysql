@@ -1,9 +1,9 @@
 import * as flow from 'xml-flow';
 import {createReadStream} from "fs";
 
-import {ImportFeedCommand} from "./ImportFeedCommand";
-import {MySQLStream} from "../database/MySQLStream";
-import {XmlFile} from "../feed/file/XmlFile";
+import {ImportFeedCommand} from "../ImportFeedCommand";
+import {MySQLStream} from "../../database/MySQLStream";
+import {XmlFile} from "../../feed/file/XmlFile";
 
 export abstract class ImportIdmsFeedCommand extends ImportFeedCommand {
 

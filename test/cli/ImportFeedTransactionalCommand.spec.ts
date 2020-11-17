@@ -47,7 +47,7 @@ describe("It should perform data update and persist results only in case of succ
           return fileNames;
         }
       } as FileProvider,
-      new ImportFeedTransactionalCommand(db, specification, tmpFolder),
+      new ImportFeedTransactionalCommand(db, specification, tmpFolder, []),
       db
     );
   };

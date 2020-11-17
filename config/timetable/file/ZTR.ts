@@ -2,6 +2,7 @@ import {RecordWithManualIdentifier} from "../../../src/feed/record/FixedWidthRec
 import {BooleanField, ForeignKeyField, ShortDateField, TextField, TimeField, VariableLengthText} from "../../../src/feed/field";
 import {MultiRecordFile} from "../../../src/feed/file/MultiRecordFile";
 import {MultiFormatRecord} from "../../../src/feed/record/MultiFormatRecord";
+import {RecordAction} from "../../../src/feed/record/Record";
 
 const schedule = new RecordWithManualIdentifier(
   "z_schedule",
@@ -92,13 +93,14 @@ const stopRecordTypes = {
 
 const stop = new MultiFormatRecord(
   "z_stop_time",
-  ["z_schedule", "location", "public_departure_time"],
+  ["z_schedule", "location", "public_departure_time", "public_arrival_time", "activity"],
   stopRecordTypes.LI,
   stopRecordTypes,
   0,
   2,
   [],
-  true
+  true,
+  RecordAction.Update // JP-838
 );
 
 const ZTR = new MultiRecordFile({

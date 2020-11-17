@@ -12,7 +12,7 @@ import {GTFSOutput} from "../gtfs/output/GTFSOutput";
 import * as fs from "fs";
 import {addLateNightServices} from "../gtfs/command/AddLateNightServices";
 import streamToPromise = require("stream-to-promise");
-import {Route, RouteID} from "../gtfs/file/Route";
+import {RouteID} from "../gtfs/file/Route";
 
 export class OutputGTFSCommand implements CLICommand {
   private baseDir: string;
@@ -32,16 +32,16 @@ export class OutputGTFSCommand implements CLICommand {
       throw new Error(`Output path ${this.baseDir} does not exist.`);
     }
 
-    const associationsP = this.repository.getAssociations();
-    const scheduleResultsP = this.repository.getSchedules();
+    const agencyP = this.copy(agencies, "agency.txt");
     const transfersP = this.copy(this.repository.getTransfers(), "transfers.txt");
     const stopsP = this.copy(this.repository.getStops(), "stops.txt");
-    const agencyP = this.copy(agencies, "agency.txt");
     const fixedLinksP = this.copy(this.repository.getFixedLinks(), "links.txt");
 
+    const associationsP = this.repository.getAssociations();
+    const scheduleResultsP = this.repository.getSchedules();
     const schedules = this.getSchedules(await associationsP, await scheduleResultsP);
-    const [calendars, calendarDates, serviceIds] = createCalendar(schedules);
 
+    const [calendars, calendarDates, serviceIds] = createCalendar(schedules);
     const calendarP = this.copy(calendars, "calendar.txt");
     const calendarDatesP = this.copy(calendarDates, "calendar_dates.txt");
     const tripsP = this.copyTrips(schedules, serviceIds);
@@ -64,6 +64,9 @@ export class OutputGTFSCommand implements CLICommand {
    */
   private async copy(results: object[] | Promise<object[]>, filename: string): Promise<void> {
     const rows = await results;
+    if (rows.length === 0) {
+      throw new Error(`OJP update failed for ${filename} file. Files shouldn't be empty`)
+    }
     const output = this.output.open(this.baseDir + filename);
 
     console.log("Writing " + filename);
@@ -111,9 +114,8 @@ export class OutputGTFSCommand implements CLICommand {
     const processedSchedules = <ScheduleIndex>applyOverlays(scheduleResults.schedules, scheduleResults.idGenerator);
     const associatedSchedules = applyAssociations(processedSchedules, processedAssociations, scheduleResults.idGenerator);
     const mergedSchedules = <Schedule[]>mergeSchedules(associatedSchedules);
-    const schedules = addLateNightServices(mergedSchedules, scheduleResults.idGenerator);
 
-    return schedules;
+    return addLateNightServices(mergedSchedules, scheduleResults.idGenerator);
   }
 
   /**
@@ -124,21 +126,9 @@ export class OutputGTFSCommand implements CLICommand {
    */
   public getRoutesFromSchedule(schedule: Schedule, routesCollection: {}): RouteID {
     const route = schedule.toRoute();
-    const routeKey = this.getRouteKey(route);
-    routesCollection[routeKey] = routesCollection[routeKey] || route
-    return routesCollection[routeKey].route_id;
-  }
 
-  /**
-   * We should group routes not only by short_name but also by route_type which can be difference.
-   * For example SR:ABD->DEE with train is not the same route as SR:ABD->DEE with bus replacement.
-   * @param route
-   */
-  private getRouteKey(route: Route): string {
-    return [
-      route.route_short_name,
-      route.route_type
-    ].join('-');
-  }
+    routesCollection[route.route_id] = route;
 
+    return route.route_id;
+  }
 }

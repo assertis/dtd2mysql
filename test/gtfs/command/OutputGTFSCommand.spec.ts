@@ -32,7 +32,8 @@ describe("OutputGTFSCommand", () => {
       new CIFRepository(
         new MockDatabaseConnection(),
         require('mysql2').createPool({}),
-        stationCoordinates
+        stationCoordinates,
+        3,
       ),
       new FileOutput()
     );
@@ -41,8 +42,8 @@ describe("OutputGTFSCommand", () => {
       outputGTFS.getRoutesFromSchedule(schedule, routes);
     }
 
-    chai.expect(routes['LN:ASH->SEA-2'].route_type).to.equal(2);
-    chai.expect(routes['LN:ASH->SEA-6'].route_type).to.equal(6);
+    chai.expect(routes[1].route_type).to.equal(2);
+    chai.expect(routes[2].route_type).to.equal(6);
   });
 
 });

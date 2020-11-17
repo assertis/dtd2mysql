@@ -1,38 +1,50 @@
-import * as memoize from "memoized-class-decorator";
-import { CLICommand } from "./CLICommand";
-import { ImportFeedCommand } from "./ImportFeedCommand";
-import { DatabaseConfiguration, DatabaseConnection } from "../database/DatabaseConnection";
-import config, { viewsSqlFactory } from "../../config";
-import { CleanFaresCommand } from "./CleanFaresCommand";
-import { ShowHelpCommand } from "./ShowHelpCommand";
-import { OutputGTFSCommand } from "./OutputGTFSCommand";
-import { CIFRepository } from "../gtfs/repository/CIFRepository";
-import { stationCoordinates } from "../../config/gtfs/station-coordinates";
-import { FileOutput } from "../gtfs/output/FileOutput";
-import { GTFSOutput } from "../gtfs/output/GTFSOutput";
-import { OutputGTFSZipCommand } from "./OutputGTFSZipCommand";
-import { DownloadCommand } from "./DownloadCommand";
-import { DownloadAndProcessCommand } from "./DownloadAndProcessCommand";
-import { GTFSImportCommand } from "./GTFSImportCommand";
-import { nfm64DownloadUrl } from "../../config/nfm64";
-import { DownloadFileCommand } from "./DownloadFileCommand";
-import { PromiseSFTP } from "../sftp/PromiseSFTP";
-import { ImportIdmsFixedLinksCommand } from "./ImportIdmsFixedLinksCommand";
 import * as AWS from 'aws-sdk';
 import * as proxy from "proxy-agent";
-import { DownloadFileFromS3Command } from "./DownloadFileFromS3Command";
-import { idmsBucket, idmsFixedLinksFilename, idmsGroupFilename, idmsPrefix, idmsUrl } from "../../config/idms";
-import { ImportIdmsGroupCommand } from "./ImportIdmsGroupCommand";
+import * as memoize from "memoized-class-decorator";
+
+import {DatabaseConfiguration, DatabaseConnection, OfflineDataProcessor} from "../database";
+import config from "../../config";
+import {CIFRepository} from "../gtfs/repository/CIFRepository";
+import {stationCoordinates} from "../../config/gtfs/station-coordinates";
+import {FileOutput} from "../gtfs/output/FileOutput";
+import {GTFSOutput} from "../gtfs/output/GTFSOutput";
+import {nfm64DownloadUrl} from "../../config/nfm64";
+import {faresPath, PromiseSFTP, routingPath, SourceManager, timetablePath} from "../sftp";
+import {idmsBucket, idmsFixedLinksFilename, idmsGroupFilename, idmsPrefix, idmsUrl} from "../../config/idms";
+import {S3Storage} from '../backup/S3Storage';
+import {xFilesBucket, xFilesPrefix} from "../../config/timetable";
 import {
-  OfflineDataProcessor
-} from "../database/OfflineDataProcessor";
-import { CleanupDatabasesCommand } from "./CleanupDatabasesCommand";
-import { ImportFeedTransactionalCommand, ImportFeedTransactionalCommandInterface } from './ImportFeedTransactionalCommand';
-import { DownloadAndProcessInTransactionCommand } from './DownloadAndProcessInTransactionCommand';
-import { BackupDatabaseCommand } from './BackupDatabaseCommand';
-import { S3Storage } from '../backup/S3Storage';
+  ImportIdmsFixedLinksCommand,
+  ImportIdmsFixedLinksCommandWithFallback,
+  ImportIdmsGroupCommand,
+  ImportIdmsGroupCommandWithFallback
+} from "./idms";
+import {
+  BackupDatabaseCommand,
+  CheckAvailableFilesCommand,
+  CleanFaresCommand,
+  CleanupDatabasesCommand,
+  CLICommand,
+  DownloadAndProcessCommand,
+  DownloadAndProcessInTransactionCommand,
+  DownloadCommand,
+  DownloadDirectoryFromS3Command,
+  DownloadFileCommand,
+  DownloadFileFromS3Command,
+  GTFSImportCommand,
+  ImportDirectoryTransactionalCommand,
+  ImportFeedCommand,
+  ImportFeedTransactionalCommand,
+  ImportFeedTransactionalCommandInterface,
+  OutputGTFSCommand,
+  OutputGTFSZipCommand,
+  RollbackDatabaseCommand,
+  ShowHelpCommand
+} from ".";
 
 export class Container {
+
+  private readonly GTFSScheduleHorizonMonths = 12;
 
   @memoize
   public getCommand(type: string): Promise<CLICommand> {
@@ -58,11 +70,13 @@ export class Container {
       case "--gtfs-zip":
         return this.getOutputGTFSZipCommand();
       case "--download-fares":
-        return this.getDownloadCommand("/fares/");
+        return this.getDownloadCommand(faresPath);
       case "--download-timetable":
-        return this.getDownloadCommand("/timetable/");
+        return this.getDownloadCommand(timetablePath);
+      case "--download-x-files":
+        return this.getDownloadXFilesCommand();
       case "--download-routeing":
-        return this.getDownloadCommand("/routing_guide/");
+        return this.getDownloadCommand(routingPath);
       case "--download-nfm64":
         return this.getDownloadNFM64Command();
       case "--download-idms-fixed-links":
@@ -70,15 +84,27 @@ export class Container {
       case "--download-idms-group":
         return this.getDownloadIdmsGroupCommand();
       case "--get-fares":
-        return this.getDownloadAndProcessCommand("/fares/", this.getFaresImportCommand());
+        return this.getDownloadAndProcessCommand(faresPath, this.getFaresImportCommand());
       case "--get-fares-in-transaction":
-        return this.getDownloadAndProcessInTransactionCommand("/fares/", this.getFaresImportCommandWithFallback());
+        return this.getDownloadAndProcessInTransactionCommand(faresPath, this.getFaresImportCommandWithFallback());
+      case "--get-timetable-in-transaction":
+        return this.getDownloadAndProcessInTransactionCommand(timetablePath, this.getTimetableImportCommandWithFallback());
+      case "--get-x-files-in-transaction":
+        return this.getDownloadAndProcessXFilesInTransactionCommand();
+      case "--get-routeing-in-transaction":
+        return this.getDownloadAndProcessInTransactionCommand(routingPath, this.getRouteingImportCommandWithFallback());
       case "--get-timetable":
-        return this.getDownloadAndProcessCommand("/timetable/", this.getTimetableImportCommand());
+        return this.getDownloadAndProcessCommand(timetablePath, this.getTimetableImportCommand());
       case "--get-routeing":
-        return this.getDownloadAndProcessCommand("/routing_guide/", this.getRouteingImportCommand());
+        return this.getDownloadAndProcessCommand(routingPath, this.getRouteingImportCommand());
       case "--get-nfm64":
         return this.getDownloadAndProcessNFM64Command();
+      case "--get-nfm64-in-transaction":
+        return this.getDownloadAndProcessInTransactionNFM64Command();
+      case "--get-idms-fixed-links-in-transaction":
+        return this.getDownloadAndProcessInTransactionIdmsFixedLinksCommand();
+      case "--get-idms-group-in-transaction":
+        return this.getDownloadAndProcessInTransactionIdmsGroupCommand();
       case "--get-idms-fixed-links":
         return this.getDownloadAndProcessIdmsFixedLinksCommand();
       case "--get-idms-group":
@@ -87,9 +113,64 @@ export class Container {
         return this.getCleanupDatabasesCommand();
       case "--backup-fares":
         return this.getBackupDatabaseCommand('fares');
+      case "--backup-timetable":
+        return this.getBackupDatabaseCommand('timetable');
+      case "--backup-routeing":
+        return this.getBackupDatabaseCommand('routeing');
+      case "--backup-ojp":
+        return this.getBackupDatabaseCommand('ojp');
+      case "--rollback-fares":
+        return this.getRollbackDatabaseCommand('fares');
+      case "--rollback-timetable":
+        return this.getRollbackDatabaseCommand('timetable');
+      case "--rollback-routeing":
+        return this.getRollbackDatabaseCommand('routeing');
+      case "--rollback-ojp":
+        return this.getRollbackDatabaseCommand('ojp');
+      case "--check-files-availability":
+        return this.getCheckAvailableFilesCommand();
       default:
         return this.getShowHelpCommand();
     }
+  }
+
+  @memoize
+  public async getCheckAvailableFilesCommand(): Promise<CheckAvailableFilesCommand> {
+    const [
+      sftp,
+      fares,
+      timetable
+    ] = await Promise.all([
+      this.getSFTP(),
+      this.getDatabaseConnection(process.env.FARES_DATABASE),
+      this.getDatabaseConnection(process.env.TIMETABLE_DATABASE)
+    ]);
+    const [
+      faresFileManager,
+      timetableFileManager
+    ] = [
+      new SourceManager(sftp, fares),
+      new SourceManager(sftp, timetable)
+    ];
+    return new CheckAvailableFilesCommand(
+      faresFileManager,
+      timetableFileManager,
+    );
+  }
+
+  @memoize
+  public async getRollbackDatabaseCommand(databaseName: string): Promise<RollbackDatabaseCommand> {
+    const bucketName = process.env.BUCKET_NAME || "";
+    if (bucketName.length === 0) {
+      throw new Error("Please set BUCKET_NAME variable");
+    }
+    return new RollbackDatabaseCommand(
+      databaseName,
+      process.env.DATABASE_USERNAME || "root",
+      process.env.DATABASE_PASSWORD || "",
+      process.env.DATABASE_HOSTNAME || "localhost",
+      new S3Storage(await this.getS3(), bucketName),
+    );
   }
 
   @memoize
@@ -111,7 +192,7 @@ export class Container {
   public async getCleanupDatabasesCommand(): Promise<CleanupDatabasesCommand> {
     return new CleanupDatabasesCommand(
       this.getDatabaseConnection(),
-      new OfflineDataProcessor(process.env.DATABASE_NAME || "", this.databaseConfiguration)
+      new OfflineDataProcessor(process.env.DATABASE_NAME || "", this.getDatabaseConfiguration())
     );
   }
 
@@ -130,7 +211,49 @@ export class Container {
     return new ImportFeedTransactionalCommand(
       await this.getDatabaseConnection(),
       config.fares,
-      "/tmp/dtd/fares/"
+      "/tmp/dtd/fares/",
+      []
+    );
+  }
+
+  @memoize
+  public async getXFilesImportCommandWithFallback(): Promise<ImportDirectoryTransactionalCommand> {
+    return new ImportDirectoryTransactionalCommand(
+      await this.getDatabaseConnection(),
+      config.timetableExtra,
+      this.getXFilesTmpDirectory(),
+      config.sanityChecks.timetable,
+    );
+  }
+
+  @memoize
+  public async getTimetableImportCommand(): Promise<ImportFeedCommand> {
+    return new ImportFeedCommand(
+      await this.getDatabaseConnection(),
+      config.timetable,
+      "/tmp/dtd/timetable/",
+      this.getXFilesTmpDirectory(),
+    );
+  }
+
+  @memoize
+  public async getTimetableImportCommandWithFallback(): Promise<ImportFeedTransactionalCommand> {
+    return new ImportFeedTransactionalCommand(
+      await this.getDatabaseConnection(),
+      config.timetable,
+      "/tmp/dtd/timetable/",
+      config.sanityChecks.timetable,
+      this.getXFilesTmpDirectory(),
+    );
+  }
+
+  @memoize
+  public async getRouteingImportCommandWithFallback(): Promise<ImportFeedTransactionalCommand> {
+    return new ImportFeedTransactionalCommand(
+      await this.getDatabaseConnection(),
+      config.routeing,
+      "/tmp/dtd/routeing/",
+      []
     );
   }
 
@@ -144,11 +267,12 @@ export class Container {
   }
 
   @memoize
-  public async getTimetableImportCommand(): Promise<ImportFeedCommand> {
-    return new ImportFeedCommand(
+  public async getNFM64ImportCommandWithFallback(): Promise<ImportFeedTransactionalCommand> {
+    return new ImportFeedTransactionalCommand(
       await this.getDatabaseConnection(),
-      config.timetable,
-      "/tmp/dtd/timetable/"
+      config.nfm64,
+      "/tmp/dtd/nfm64/",
+      []
     );
   }
 
@@ -158,6 +282,26 @@ export class Container {
       await this.getDatabaseConnection(),
       config.nfm64,
       "/tmp/dtd/nfm64/"
+    );
+  }
+
+  @memoize
+  public async getImportIdmsFixedLinksCommandWithFallback(): Promise<ImportIdmsFixedLinksCommandWithFallback> {
+    return new ImportIdmsFixedLinksCommandWithFallback(
+      await this.getDatabaseConnection(),
+      config.idms,
+      "/tmp/idms/",
+      []
+    );
+  }
+
+  @memoize
+  public async getImportIdmsGroupCommandWithFallback(): Promise<ImportIdmsGroupCommandWithFallback> {
+    return new ImportIdmsGroupCommandWithFallback(
+      await this.getDatabaseConnection(),
+      config.idms,
+      "/tmp/idms/",
+      []
     );
   }
 
@@ -191,7 +335,7 @@ export class Container {
 
   @memoize
   public getImportGTFSCommand(): Promise<GTFSImportCommand> {
-    return Promise.resolve(new GTFSImportCommand(this.databaseConfiguration));
+    return Promise.resolve(new GTFSImportCommand(this.getDatabaseConfiguration()));
   }
 
   @memoize
@@ -200,7 +344,8 @@ export class Container {
       new CIFRepository(
         this.getDatabaseConnection(),
         this.getDatabaseStream(),
-        stationCoordinates
+        stationCoordinates,
+        this.GTFSScheduleHorizonMonths,
       ),
       output
     );
@@ -218,7 +363,12 @@ export class Container {
 
   @memoize
   private async getDownloadCommand(path: string): Promise<DownloadCommand> {
-    return new DownloadCommand(await this.getDatabaseConnection(), await this.getSFTP(), path);
+    const [db, sftp] = await Promise.all([
+      this.getDatabaseConnection(),
+      this.getSFTP()
+    ]);
+    const fileManager = new SourceManager(sftp, db);
+    return new DownloadCommand(fileManager, path);
   }
 
   @memoize
@@ -234,6 +384,14 @@ export class Container {
       : new DownloadFileCommand(idmsUrl + filename, filename);
 
     return Promise.resolve(command);
+  }
+
+  private async getDownloadXFilesCommand(): Promise<DownloadDirectoryFromS3Command> {
+    return new DownloadDirectoryFromS3Command(await this.getS3(), xFilesBucket, xFilesPrefix, this.getXFilesTmpDirectory());
+  }
+
+  private getXFilesTmpDirectory(): string {
+    return '/tmp/x-files/';
   }
 
   @memoize
@@ -271,7 +429,7 @@ export class Container {
     }
 
     if (proxyUrl) {
-      config.httpOptions = { agent: proxy(proxyUrl) };
+      config.httpOptions = {agent: proxy(proxyUrl)};
     }
 
     return new AWS.S3(config);
@@ -294,11 +452,46 @@ export class Container {
     );
   }
 
+  private async getDownloadAndProcessXFilesInTransactionCommand() {
+    return new DownloadAndProcessInTransactionCommand(
+      await this.getDownloadXFilesCommand(),
+      await this.getXFilesImportCommandWithFallback(),
+      await this.getDatabaseConnection()
+    );
+  }
+
+  @memoize
+  private async getDownloadAndProcessInTransactionNFM64Command(): Promise<DownloadAndProcessInTransactionCommand> {
+    return new DownloadAndProcessInTransactionCommand(
+      await this.getDownloadNFM64Command(),
+      await this.getNFM64ImportCommandWithFallback(),
+      await this.getDatabaseConnection()
+    );
+  }
+
   @memoize
   private async getDownloadAndProcessNFM64Command(): Promise<DownloadAndProcessCommand> {
     return new DownloadAndProcessCommand(
       await this.getDownloadNFM64Command(),
       await this.getNFM64ImportCommand(),
+      await this.getDatabaseConnection()
+    );
+  }
+
+  @memoize
+  private async getDownloadAndProcessInTransactionIdmsFixedLinksCommand(): Promise<DownloadAndProcessInTransactionCommand> {
+    return new DownloadAndProcessInTransactionCommand(
+      await this.getDownloadIdmsFixedLinksCommand(),
+      await this.getImportIdmsFixedLinksCommandWithFallback(),
+      await this.getDatabaseConnection()
+    );
+  }
+
+  @memoize
+  private async getDownloadAndProcessInTransactionIdmsGroupCommand(): Promise<DownloadAndProcessInTransactionCommand> {
+    return new DownloadAndProcessInTransactionCommand(
+      await this.getDownloadIdmsGroupCommand(),
+      await this.getImportIdmsGroupCommandWithFallback(),
       await this.getDatabaseConnection()
     );
   }
@@ -334,20 +527,20 @@ export class Container {
   }
 
   @memoize
-  public getDatabaseConnection(): DatabaseConnection {
+  public getDatabaseConnection(customDbName?: string): DatabaseConnection {
     return require('mysql2/promise').createPool({
-      ...this.databaseConfiguration,
+      ...this.getDatabaseConfiguration(customDbName),
     });
   }
 
   @memoize
   public getDatabaseStream() {
-    return require('mysql2').createPool(this.databaseConfiguration);
+    return require('mysql2').createPool(this.getDatabaseConfiguration());
 
   }
 
-  public get databaseConfiguration(): DatabaseConfiguration {
-    if (!process.env.DATABASE_NAME) {
+  public getDatabaseConfiguration(dbName?: string): DatabaseConfiguration {
+    if (!dbName && !process.env.DATABASE_NAME) {
       throw new Error("Please set the DATABASE_NAME environment variable.");
     }
 
@@ -355,7 +548,7 @@ export class Container {
       host: process.env.DATABASE_HOSTNAME || "localhost",
       user: process.env.DATABASE_USERNAME || "root",
       password: process.env.DATABASE_PASSWORD || null,
-      database: <string>process.env.DATABASE_NAME,
+      database: dbName || <string> process.env.DATABASE_NAME,
       connectionLimit: 20,
       multipleStatements: true
     };

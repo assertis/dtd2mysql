@@ -58,6 +58,7 @@ export class MySQLStream extends Writable {
 
   public async _final(callback: WritableCallback): Promise<void> {
     try {
+      await this.close();
       callback();
     }
     catch (err) {

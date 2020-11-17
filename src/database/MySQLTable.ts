@@ -11,6 +11,7 @@ export class MySQLTable implements Table {
     [RecordAction.Insert]: [] as ParsedRecord[],
     [RecordAction.Update]: [] as ParsedRecord[],
     [RecordAction.Delete]: [] as ParsedRecord[],
+    [RecordAction.DelayedInsert]: [] as ParsedRecord[],
   };
 
   constructor(
@@ -40,8 +41,13 @@ export class MySQLTable implements Table {
   public async apply(row: ParsedRecord): Promise<void> {
     this.buffer[row.action].push(row);
 
-    if (this.buffer[row.action].length >= this.flushLimit) {
-      return await this.flush(row.action);
+    // if it's a delayed insert, also add a delete entry
+    if (row.action === RecordAction.DelayedInsert) {
+      this.buffer[RecordAction.Delete].push({ action: RecordAction.Delete, ...row });
+    }
+    // only flush the buffer it its not a delayed insert (as they are flushed at the end)
+    else if (this.buffer[row.action].length >= this.flushLimit) {
+      return this.flush(row.action);
     }
   }
 
@@ -54,24 +60,27 @@ export class MySQLTable implements Table {
     if (rows.length > 0) {
       this.buffer[type] = [];
 
-      // Deletes must run before inserts.
-      if (type !== RecordAction.Delete) {
-        this.flush(RecordAction.Delete);
-      }
+      console.log(`Flushing ${rows.length} rows of ${type} in ${this.tableName}`);
 
       return this.queryWithRetry(type, rows);
     }
+  }
+
+  public async flushAll(): Promise<any> {
+    await Promise.all([
+      this.flush(RecordAction.Delete),
+      this.flush(RecordAction.Update),
+      this.flush(RecordAction.Insert)
+    ]);
+
+    await this.flush(RecordAction.DelayedInsert);
   }
 
   /**
    * Flush and return all promises
    */
   public async close(): Promise<any> {
-    await Promise.all([
-      this.flush(RecordAction.Delete),
-      this.flush(RecordAction.Update),
-      this.flush(RecordAction.Insert)
-    ]);
+    await this.flushAll();
 
     if (this.db.release) {
       await this.db.release();
@@ -86,6 +95,7 @@ export class MySQLTable implements Table {
       await this.query(type, rows);
     } catch (err) {
       if (err.errno === 1213 && numRetries > 0) {
+        console.log(`Re-trying ${rows.length} rows of ${type} in ${this.tableName}`);
         return this.queryWithRetry(type, rows, numRetries - 1);
       } else {
         throw err;
@@ -98,6 +108,7 @@ export class MySQLTable implements Table {
 
     switch (type) {
       case RecordAction.Insert:
+      case RecordAction.DelayedInsert:
         return this.db.query(`INSERT IGNORE INTO \`${this.tableName}\` VALUES ?`, [rowValues]);
       case RecordAction.Update:
         return this.db.query(`REPLACE INTO \`${this.tableName}\` VALUES ?`, [rowValues]);

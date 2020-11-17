@@ -42,6 +42,13 @@ export class CleanFaresCommand implements CLICommand {
     "UPDATE status_discount SET discount_indicator = 'X' WHERE status_code != '000' and status_code != '001' AND discount_percentage = 0",
   ];
 
+  private readonly indexes = [
+    "CREATE INDEX fare_flow_id ON fare (flow_id)",
+    "ALTER TABLE toc_specific_ticket ADD COLUMN `hash` VARCHAR(255) DEFAULT NULL;" +
+    "UPDATE toc_specific_ticket SET `hash`=COALESCE(ticket_code, restriction_code, restriction_flag, direction, end_date);",
+    "CREATE INDEX toc_specific_ticket_toc_key ON toc_specific_ticket (hash)"
+  ];
+
   private readonly restrictionTables = [
     "restriction_time_date", "restriction_ticket_calendar", "restriction_train_date", "restriction_header_date"
   ];
@@ -58,7 +65,8 @@ export class CleanFaresCommand implements CLICommand {
       await Promise.all([
         this.setNetworkAreaRestrictionCodes(),
         this.clean(),
-        this.applyRestrictionDates()
+        this.applyRestrictionDates(),
+        this.index()
       ]);
     }
     catch (err) {
@@ -69,9 +77,25 @@ export class CleanFaresCommand implements CLICommand {
   }
 
   private async clean(): Promise<void> {
-    await Promise.all(this.queries.map(q => this.queryWithRetry(q)));
-
+    await Promise.all(this.queries.map(async q => this.queryWithRetry(q)));
     console.log("Removed old and irrelevant fares data");
+  }
+
+  private async index(): Promise<void> {
+    await Promise.all(
+        this.indexes.map(async q => {
+          try {
+            await this.queryWithRetry(q, 1);
+          } catch(err) {
+            /**
+             * Ignore errors when indexes exist.
+             * Unfortunately there is no CREATE INDEX IF EXISTS in mySQL
+             */
+          }
+        })
+    );
+
+    console.log("Required indexes added");
   }
 
   private async applyRestrictionDates(): Promise<void> {
@@ -92,8 +116,8 @@ export class CleanFaresCommand implements CLICommand {
       const startDate = this.getFirstDateAfter(date.start_date, record.date_from);
       const endDate = isFuture ? moment(date.end_date) : this.getFirstDateAfter(startDate.toDate(), record.date_to);
 
-      if (startDate.isAfter(endDate)) {
-        throw new Error(`Error processing ${record} start date after end date: ${startDate.format("YYYY-MM-DD")} ${endDate.format("YYYY-MM-DD")}`);
+      if (startDate.isAfter(endDate)  || !startDate.isValid() || !endDate.isValid()) {
+        throw new Error(`Error processing ${record} dates are invalid: start = ${startDate.format("YYYY-MM-DD")} end=${endDate.format("YYYY-MM-DD")}`);
       }
       else {
         return this.db.query(`UPDATE ${tableName} SET start_date = ?, end_date = ? WHERE id = ?`, [
@@ -114,8 +138,13 @@ export class CleanFaresCommand implements CLICommand {
   private getFirstDateAfter(earliestDate: Date, restrictionMonth: string): Moment {
     const earliestMonth = moment(earliestDate).format("MMDD");
     const yearOffset = (parseInt(earliestMonth) > parseInt(restrictionMonth)) ? 1 : 0;
+    const out = moment((earliestDate.getFullYear() + yearOffset) + restrictionMonth, "YYYYMMDD");
 
-    return moment((earliestDate.getFullYear() + yearOffset) + restrictionMonth, "YYYYMMDD");
+    if (!out.isValid() && restrictionMonth === '0229') {
+      return moment((earliestDate.getFullYear() + yearOffset) + '0228', "YYYYMMDD");
+    }
+
+    return out;
   }
 
   private async queryWithRetry(query: string, max: number = 10, current: number = 1): Promise<void> {
@@ -128,6 +157,20 @@ export class CleanFaresCommand implements CLICommand {
       }
       else {
         await this.queryWithRetry(query, max, current + 1);
+      }
+    }
+  }
+
+  private async executeWithRetry(query: string, max: number = 10, current: number = 1): Promise<void> {
+    try {
+      await this.db.execute(query)
+    }
+    catch (err) {
+      if (current >= max) {
+        throw err;
+      }
+      else {
+        await this.executeWithRetry(query, max, current + 1);
       }
     }
   }
@@ -149,8 +192,6 @@ export class CleanFaresCommand implements CLICommand {
       SELECT origin_code, destination_code, route_code, direction, restriction_code
       FROM flow
       JOIN fare USING (flow_id)
-      LEFT JOIN station_cluster oc ON origin_code = oc.cluster_nlc
-      LEFT JOIN station_cluster dc ON destination_code = dc.cluster_nlc
       WHERE ticket_code IN ('CDR', 'CDS', 'ODT', 'SVR', 'SVS')
       AND restriction_code IS NOT NULL
       GROUP BY origin_code, destination_code, route_code

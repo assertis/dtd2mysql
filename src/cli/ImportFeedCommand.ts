@@ -29,7 +29,8 @@ export class ImportFeedCommand implements CLICommand {
   constructor(
     protected readonly db: DatabaseConnection,
     protected readonly files: FeedConfig,
-    protected readonly tmpFolder: string
+    protected readonly tmpFolder: string,
+    private readonly xFilesFolder?: string,
   ) {
     this.scheduleIdMap = new ScheduleIdMap(this.db);
   }
@@ -56,18 +57,19 @@ export class ImportFeedCommand implements CLICommand {
    * Extract the zip, set up the schema and do the inserts
    */
   public async doImport(filePath: string): Promise<void> {
+    console.log('Importing using ImportFeedCommand');
+
     console.log(`Extracting ${filePath} to ${this.tmpFolder}`);
     fs.emptyDirSync(this.tmpFolder);
 
     new AdmZip(filePath).extractAllTo(this.tmpFolder);
 
     const zipName = path.basename(filePath);
-
-    const isIncrementalUpdate = zipName.charAt(4) === "C";
+    const isIncremental = zipName.charAt(4) === "C";
     const isCfaLoaded = this.files["CFA"] instanceof MultiRecordFile;
 
     // if the file is a not an incremental, reset the database schema
-    if (!isIncrementalUpdate) {
+    if (!isIncremental) {
       await Promise.all(this.fileArray.map(file => this.setupSchema(file)));
       await this.createLastProcessedSchema();
     }
@@ -77,17 +79,36 @@ export class ImportFeedCommand implements CLICommand {
       this.ensureALFExists(zipName.substring(0, zipName.length - 4));
     }
 
-    if (isIncrementalUpdate && isCfaLoaded) {
+    if (isIncremental && isCfaLoaded) {
       await this.loadScheduleIdMap();
-     }
+    }
 
-    await Promise.all(
-      fs.readdirSync(this.tmpFolder)
-        .filter(filename => this.getFeedFile(filename))
-        .map(filename => this.processFile(filename))
-    );
+    await this.importDirectory(this.tmpFolder);
+
+    if (this.files["CFA"] instanceof MultiRecordFile) {
+      await this.removeOrphanStopTimes();
+    }
 
     await this.updateLastFile(zipName);
+
+    // We import X-files only with the full update of the timetable feed
+    if (this.xFilesFolder !== undefined && !isIncremental) {
+      console.log(`Importing X-Files from "${this.xFilesFolder}" - is incremental: ${isIncremental ? 'yes' : 'no'}`);
+      await this.importDirectory(this.xFilesFolder);
+    } else {
+      console.log(`Skipping X-Files import from "${this.xFilesFolder}" - is incremental: ${isIncremental ? 'yes' : 'no'}`);
+    }
+  }
+
+  private async importDirectory(path: string): Promise<void> {
+    // no, we can't squeeze those 2 Promise.all() into single one.
+    await Promise.all(
+      fs.readdirSync(path)
+        .filter(filename => this.getFeedFile(filename))
+        .map(filename => this.processFile(path, filename))
+    );
+
+    await Promise.all(Object.values(this.index).map(table => table.flushAll()));
   }
 
   /**
@@ -130,6 +151,13 @@ export class ImportFeedCommand implements CLICommand {
     bsRecord.setScheduleIdMap(await this.scheduleIdMap.load());
   }
 
+  private async removeOrphanStopTimes() {
+    return Promise.all([
+      this.db.query("DELETE FROM stop_time WHERE schedule NOT IN (SELECT id FROM schedule)"),
+      this.db.query("DELETE FROM schedule_extra WHERE schedule NOT IN (SELECT id FROM schedule)")
+    ]);
+  }
+
   private ensureALFExists(filename): void {
     if (!fs.existsSync(this.tmpFolder + filename + ".alf")) {
       fs.copyFileSync(__dirname + "/../../config/timetable/data/fixed.alf", this.tmpFolder + "fixed.alf");
@@ -143,19 +171,19 @@ export class ImportFeedCommand implements CLICommand {
   /**
    * Process the records inside the given file
    */
-  private async processFile(filename: string): Promise<any> {
+  private async processFile(path, filename: string): Promise<any> {
     const file = this.getFeedFile(filename);
     const tables = await this.tables(file);
     const tableStream = new MySQLStream(filename, file, tables);
-    const stream = readFile(this.tmpFolder + filename).pipe(tableStream);
+    const stream = readFile(path + filename).pipe(tableStream);
 
     try {
       await streamToPromise(stream);
 
-      console.log(`Finished processing ${filename}`);
+      console.log(`Finished processing ${path + filename}`);
     }
     catch (err) {
-      console.error(`Error processing ${filename}`);
+      console.error(`Error processing ${path + filename}`);
       console.error(err);
     }
   }

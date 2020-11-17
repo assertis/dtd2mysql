@@ -30,6 +30,7 @@ Import a DTD feed into a MySQL compatible database
   --get-routeing [DIR]               download and process latest routeing refresh from DTD
   --get-nfm64 [DIR]                  download and process latest nfm64 file
   --get-idms-fixed-links [DIR]       download and process latest IDMS fixed links file
+  --check-files-availability         return information if any new fares and timetable files are available
 
 The following environment properties are expected to be set:
   

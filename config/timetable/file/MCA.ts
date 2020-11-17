@@ -1,6 +1,12 @@
 import {FixedWidthRecord, RecordWithManualIdentifier} from "../../../src/feed/record/FixedWidthRecord";
+import {TextField, VariableLengthText} from "../../../src/feed/field";
 import {BooleanField, ForeignKeyField, IntField, ShortDateField, TextField, TimeField, VariableLengthText} from "../../../src/feed/field";
 import {MultiRecordFile} from "../../../src/feed/file/MultiRecordFile";
+import {BooleanField} from "../../../src/feed/field";
+import {ShortDateField} from "../../../src/feed/field";
+import {IntField} from "../../../src/feed/field";
+import {ForeignKeyField} from "../../../src/feed/field";
+import {TimeField} from "../../../src/feed/field";
 import {MultiFormatRecord} from "../../../src/feed/record/MultiFormatRecord";
 import {ParsedRecord, RecordAction} from "../../../src/feed/record/Record";
 import {TableIndex} from "../../../src/database/MySQLStream";
@@ -116,7 +122,7 @@ export const extraDetails = new FixedWidthRecord(
   []
 );
 
-const stopRecordTypes = {
+export const stopRecordTypes = {
   "LO": {
     "schedule": new ForeignKeyField(schedule),
     "location": new TextField(2, 7),
@@ -170,7 +176,7 @@ const stopRecordTypes = {
   }
 };
 
-export const callingPoint = new MultiFormatRecord(
+export const stop = new MultiFormatRecord(
   "stop_time",
   ["schedule", "location", "suffix", "public_departure_time"],
   stopRecordTypes.LI,
@@ -188,9 +194,9 @@ const MCA = new MultiRecordFile({
   "TA": tiplocInsert,
   "BS": schedule,
   "BX": extraDetails,
-  "LO": callingPoint,
-  "LI": callingPoint,
-  "LT": callingPoint
+  "LO": stop,
+  "LI": stop,
+  "LT": stop
 }, 0, 2);
 
 export default MCA;
