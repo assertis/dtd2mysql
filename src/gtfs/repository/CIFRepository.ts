@@ -123,6 +123,7 @@ export class CIFRepository {
         JOIN z_stop_time ON z_schedule.id = z_stop_time.z_schedule
         WHERE runs_from < CURDATE() + INTERVAL ${this.scheduleHorizonMonths} MONTH
         AND runs_to >= CURDATE()
+        AND 1 = 0
         ORDER BY stop_id
       `))
     ]);
@@ -146,7 +147,31 @@ export class CIFRepository {
       ORDER BY stp_indicator DESC, id
     `);
 
-    return results.map(row => new Association(
+    return results.map(this.toAssociation);
+  }
+
+  public async getSleeperFortWilliamAssociationIds(): Promise<number[]> {
+    const [results] = await this.db.query<AssociationRow[]>(`
+      SELECT 
+        a.id AS id
+      FROM association a 
+      WHERE a.assoc_uid IN (
+        SELECT train_uid FROM \`schedule\`
+        WHERE id IN (SELECT \`schedule\` FROM timetable.schedule_extra WHERE atoc_code = 'CS')
+          AND id IN (
+            SELECT \`schedule\` FROM timetable.stop_time 
+            WHERE \`schedule\` IN (SELECT \`schedule\` FROM timetable.stop_time WHERE location = 'FRTWLM')
+            AND \`schedule\` IN (SELECT \`schedule\` FROM timetable.stop_time WHERE location = 'EDINBUR')
+         )
+      )
+      AND assoc_cat IN ('VV', 'JJ');
+    `);
+
+    return results.map(row => row.id);
+  }
+
+  private toAssociation(row): Association {
+    return new Association(
       row.id,
       row.base_uid,
       row.assoc_uid,
@@ -156,16 +181,16 @@ export class CIFRepository {
       new ScheduleCalendar(
         moment(row.start_date),
         moment(row.end_date), {
-        0: row.sunday,
-        1: row.monday,
-        2: row.tuesday,
-        3: row.wednesday,
-        4: row.thursday,
-        5: row.friday,
-        6: row.saturday
-      }),
+          0: row.sunday,
+          1: row.monday,
+          2: row.tuesday,
+          3: row.wednesday,
+          4: row.thursday,
+          5: row.friday,
+          6: row.saturday
+        }),
       row.stp_indicator
-    ));
+    );
   }
 
   /**
