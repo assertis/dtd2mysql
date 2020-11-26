@@ -48,9 +48,9 @@ export class Association implements OverlayRecord {
    * Apply the join or split to the associated schedule. Check for any days that the associated service runs but the
    * association does not and create additional schedules to cover those periods.
    */
-  public apply(base: Schedule, assoc: Schedule, idGenerator: IdGenerator): Schedule[] {
+  public apply(base: Schedule, assoc: Schedule, idGenerator: IdGenerator, makeMergePointAccessible: boolean = false): Schedule[] {
     const assocCalendar = this.dateIndicator === DateIndicator.Next ? this.calendar.shiftForward() : this.calendar;
-    const schedules = [this.mergeSchedules(base, assoc)];
+    const schedules = [this.mergeSchedules(base, assoc, makeMergePointAccessible)];
 
     // if the associated train starts running before the association, clone the associated schedule for those dates
     if (assoc.calendar.runsFrom.isBefore(assocCalendar.runsFrom)) {
@@ -77,7 +77,7 @@ export class Association implements OverlayRecord {
   /**
    * Apply the split or join to the given schedules
    */
-  private mergeSchedules(base: Schedule, assoc: Schedule): Schedule {
+  private mergeSchedules(base: Schedule, assoc: Schedule, makeMergePointAccessible: boolean = false): Schedule {
     let tuid: TUID;
     let start: StopTime[];
     let assocStop: StopTime;
@@ -94,13 +94,13 @@ export class Association implements OverlayRecord {
       tuid = base.tuid + "_" + assoc.tuid;
 
       start = base.before(this.assocLocation);
-      assocStop = this.mergeAssociationStop(baseStopTime, assocStopTime);
+      assocStop = this.mergeAssociationStop(baseStopTime, assocStopTime, makeMergePointAccessible);
       end = assoc.after(this.assocLocation);
     } else {
       tuid = assoc.tuid + "_" + base.tuid;
 
       start = assoc.before(this.assocLocation);
-      assocStop = this.mergeAssociationStop(assocStopTime, baseStopTime);
+      assocStop = this.mergeAssociationStop(assocStopTime, baseStopTime, makeMergePointAccessible);
       end = base.after(this.assocLocation)
     }
 
@@ -136,7 +136,7 @@ export class Association implements OverlayRecord {
   /**
    * Take the arrival time of the first stop and the departure time of the second stop and put them into a new stop
    */
-  public mergeAssociationStop(arrivalStop: StopTime, departureStop: StopTime): StopTime {
+  public mergeAssociationStop(arrivalStop: StopTime, departureStop: StopTime, makeMergePointAccessible: boolean): StopTime {
     let arrivalTime = moment.duration(arrivalStop.arrival_time);
     let departureTime = moment.duration(departureStop.departure_time);
 
@@ -148,11 +148,14 @@ export class Association implements OverlayRecord {
       }
     }
 
+    const pickup = makeMergePointAccessible ? 0 : departureStop.pickup_type;
+    const dropOff = makeMergePointAccessible ? 0 : arrivalStop.drop_off_type;
+
     return Object.assign({}, arrivalStop, {
       arrival_time: formatDuration(arrivalTime.asSeconds()),
       departure_time: formatDuration(departureTime.asSeconds()),
-      pickup_type: departureStop.pickup_type,
-      drop_off_type: arrivalStop.drop_off_type
+      pickup_type: pickup,
+      drop_off_type: dropOff,
     });
   }
 
