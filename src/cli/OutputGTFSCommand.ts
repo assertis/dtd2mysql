@@ -38,8 +38,9 @@ export class OutputGTFSCommand implements CLICommand {
     const fixedLinksP = this.copy(this.repository.getFixedLinks(), "links.txt");
 
     const associationsP = this.repository.getAssociations();
+    const sleeperFortWilliamAssociationIdsP = this.repository.getSleeperFortWilliamAssociationIds();
     const scheduleResultsP = this.repository.getSchedules();
-    const schedules = this.getSchedules(await associationsP, await scheduleResultsP);
+    const schedules = this.getSchedules(await associationsP, await scheduleResultsP, await sleeperFortWilliamAssociationIdsP);
 
     const [calendars, calendarDates, serviceIds] = createCalendar(schedules);
     const calendarP = this.copy(calendars, "calendar.txt");
@@ -109,10 +110,10 @@ export class OutputGTFSCommand implements CLICommand {
     ]);
   }
 
-  private getSchedules(associations: Association[], scheduleResults: ScheduleResults): Schedule[] {
+  private getSchedules(associations: Association[], scheduleResults: ScheduleResults, sleeperFortWilliamAssociationIds: number[]): Schedule[] {
     const processedAssociations = <AssociationIndex>applyOverlays(associations);
     const processedSchedules = <ScheduleIndex>applyOverlays(scheduleResults.schedules, scheduleResults.idGenerator);
-    const associatedSchedules = applyAssociations(processedSchedules, processedAssociations, scheduleResults.idGenerator);
+    const associatedSchedules = applyAssociations(processedSchedules, processedAssociations, sleeperFortWilliamAssociationIds, scheduleResults.idGenerator);
     const mergedSchedules = <Schedule[]>mergeSchedules(associatedSchedules);
 
     return addLateNightServices(mergedSchedules, scheduleResults.idGenerator);

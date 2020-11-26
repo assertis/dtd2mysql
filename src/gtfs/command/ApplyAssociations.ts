@@ -1,4 +1,3 @@
-
 import {Association, DateIndicator} from "../native/Association";
 import {Schedule} from "../native/Schedule";
 import {OverlapType, ScheduleCalendar} from "../native/ScheduleCalendar";
@@ -11,9 +10,12 @@ import {IdGenerator} from "../native/OverlayRecord";
  * Splits prepend the base schedule (0, point of split) to the association schedule
  * Joins append the base schedule (point of split, end) to the association schedule
  */
-export function applyAssociations(schedulesByTuid: ScheduleIndex,
-                                  associationsIndex: AssociationIndex,
-                                  idGenerator: IdGenerator): ScheduleIndex {
+export function applyAssociations(
+  schedulesByTuid: ScheduleIndex,
+  associationsIndex: AssociationIndex,
+  keepOriginalAssociatedScheduleIds: number[],
+  idGenerator: IdGenerator,
+): ScheduleIndex {
 
   for (const associations of Object.values(associationsIndex)) {
     // for each association
@@ -34,10 +36,14 @@ export function applyAssociations(schedulesByTuid: ScheduleIndex,
         const baseSchedules = findSchedules(schedulesByTuid[association.baseTUID] || [], baseCalendar);
 
         for (const baseSchedule of baseSchedules) {
-          const [replacement, ...associatedSchedules] = association.apply(baseSchedule, assocSchedule,idGenerator);
+          const [replacement, ...associatedSchedules] = association.apply(baseSchedule, assocSchedule, idGenerator);
 
           // add the merged base and associated schedule to the TUID index
           (schedulesByTuid[replacement.tuid] = schedulesByTuid[replacement.tuid] || []).push(replacement);
+          if (keepOriginalAssociatedScheduleIds.includes(association.id)) {
+            // We need to change the trip id
+            schedulesByTuid[replacement.tuid].push(assocSchedule.clone(assocSchedule.calendar, idGenerator.next().value));
+          }
 
           // remove the original associated schedule and replace with any substitute schedules created
           schedulesByTuid[assocSchedule.tuid].splice(
