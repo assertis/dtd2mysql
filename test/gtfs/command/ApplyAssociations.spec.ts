@@ -43,6 +43,7 @@ describe("ApplyAssociations", () => {
     const resultByTuid = applyAssociations(
       <ScheduleIndex>applyOverlays([base1, assoc1, base2, assoc2]),
       <AssociationIndex>applyOverlays([association1]),
+      [],
       idGenerator()
     );
 
