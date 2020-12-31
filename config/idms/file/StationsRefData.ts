@@ -13,7 +13,7 @@ class StationsRefRecord implements Record {
     "nlc": new TextField(1, 4, true),
     "name": new VariableLengthText(2, 100),
     "tiploc": new VariableLengthText(3, 50, true),
-    "crs": new TextField(4, 3),
+    "crs": new TextField(4, 3, true),
     "ojp_enabled": new BooleanField(5, false, ['true'], ['false']),
     "ojp_display_name": new VariableLengthText(6, 100, true),
     "ojp_advice_message": new VariableLengthText(7, 200, true),
