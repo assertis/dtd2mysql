@@ -2,7 +2,7 @@ import * as flow from 'xml-flow';
 import {createReadStream} from "fs";
 
 import {ImportFeedCommand} from "../ImportFeedCommand";
-import {MySQLStream} from "../../database/MySQLStream";
+import {MySQLStream} from "../../database";
 import {XmlFile} from "../../feed/file/XmlFile";
 
 export abstract class ImportIdmsFeedCommand extends ImportFeedCommand {
@@ -24,10 +24,16 @@ export abstract class ImportIdmsFeedCommand extends ImportFeedCommand {
     const inFile = createReadStream(filePath);
 
     await new Promise((resolve, reject) => {
-      const xmlStream: NodeJS.EventEmitter = flow(inFile);
+      const xmlStream: NodeJS.ReadableStream = flow(inFile);
 
       xmlStream.on(tagSelector, async function (tag: any) {
-        await tableStream.write(tag);
+        if (await tableStream.write(tag) === false) {
+          xmlStream.pause();
+        }
+      });
+
+      tableStream.on('drain', async () => {
+        xmlStream.resume();
       });
 
       xmlStream.on('end', async () => {

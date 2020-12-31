@@ -10,14 +10,23 @@ import {FileOutput} from "../gtfs/output/FileOutput";
 import {GTFSOutput} from "../gtfs/output/GTFSOutput";
 import {nfm64DownloadUrl} from "../../config/nfm64";
 import {faresPath, PromiseSFTP, routingPath, SourceManager, timetablePath} from "../sftp";
-import {idmsBucket, idmsFixedLinksFilename, idmsGroupFilename, idmsPrefix, idmsUrl} from "../../config/idms";
+import {
+  idmsBucket,
+  idmsFixedLinksFilename,
+  idmsGroupFilename,
+  idmsGroupLocationMappingFilename,
+  idmsPrefix,
+  idmsStationsRefDataFilename,
+  idmsUrl
+} from "../../config/idms";
 import {S3Storage} from '../backup/S3Storage';
 import {xFilesBucket, xFilesPrefix} from "../../config/timetable";
 import {
   ImportIdmsFixedLinksCommand,
   ImportIdmsFixedLinksCommandWithFallback,
   ImportIdmsGroupCommand,
-  ImportIdmsGroupCommandWithFallback
+  ImportIdmsGroupCommandWithFallback, ImportIdmsGroupLocationMappingCommand,
+  ImportIdmsStationsRefDataCommand
 } from "./idms";
 import {
   BackupDatabaseCommand,
@@ -83,6 +92,10 @@ export class Container {
         return this.getDownloadIdmsFixedLinksCommand();
       case "--download-idms-group":
         return this.getDownloadIdmsGroupCommand();
+      case "--download-idms-stations-ref-data":
+        return this.getDownloadIdmsStationsRefDataCommand();
+      case "--download-idms-group-location-mapping":
+        return this.getDownloadIdmsGroupLocationMappingCommand();
       case "--get-fares":
         return this.getDownloadAndProcessCommand(faresPath, this.getFaresImportCommand());
       case "--get-fares-in-transaction":
@@ -109,6 +122,10 @@ export class Container {
         return this.getDownloadAndProcessIdmsFixedLinksCommand();
       case "--get-idms-group":
         return this.getDownloadAndProcessIdmsGroupCommand();
+      case "--get-idms-stations-ref-data":
+        return this.getDownloadAndProcessIdmsStationsRefDataCommand();
+      case "--get-idms-group-location-mapping":
+        return this.getDownloadAndProcessIdmsGroupLocationMappingCommand();
       case "--clean-databases":
         return this.getCleanupDatabasesCommand();
       case "--backup-fares":
@@ -324,6 +341,24 @@ export class Container {
   }
 
   @memoize
+  public async getImportIdmsStationsRefDataCommand(): Promise<ImportIdmsStationsRefDataCommand> {
+    return new ImportIdmsStationsRefDataCommand(
+      await this.getDatabaseConnection(),
+      config.idms,
+      "/tmp/idms/"
+    );
+  }
+
+  @memoize
+  public async getImportIdmsGroupLocationMappingCommand(): Promise<ImportIdmsGroupLocationMappingCommand> {
+    return new ImportIdmsGroupLocationMappingCommand(
+      await this.getDatabaseConnection(),
+      config.idms,
+      "/tmp/idms/"
+    );
+  }
+
+  @memoize
   public async getCleanFaresCommand(): Promise<CLICommand> {
     return new CleanFaresCommand(await this.getDatabaseConnection());
   }
@@ -402,6 +437,16 @@ export class Container {
   @memoize
   private async getDownloadIdmsGroupCommand(): Promise<DownloadFileFromS3Command | DownloadFileCommand> {
     return this.getDownloadIdmsFileCommand(idmsGroupFilename);
+  }
+
+  @memoize
+  private async getDownloadIdmsStationsRefDataCommand(): Promise<DownloadFileFromS3Command | DownloadFileCommand> {
+    return this.getDownloadIdmsFileCommand(idmsStationsRefDataFilename);
+  }
+
+  @memoize
+  private async getDownloadIdmsGroupLocationMappingCommand(): Promise<DownloadFileFromS3Command | DownloadFileCommand> {
+    return this.getDownloadIdmsFileCommand(idmsGroupLocationMappingFilename);
   }
 
   public async getS3(): Promise<AWS.S3> {
@@ -510,6 +555,24 @@ export class Container {
     return new DownloadAndProcessCommand(
       await this.getDownloadIdmsGroupCommand(),
       await this.getImportIdmsGroupCommand(),
+      await this.getDatabaseConnection()
+    );
+  }
+
+  @memoize
+  private async getDownloadAndProcessIdmsStationsRefDataCommand(): Promise<DownloadAndProcessCommand> {
+    return new DownloadAndProcessCommand(
+      await this.getDownloadIdmsStationsRefDataCommand(),
+      await this.getImportIdmsStationsRefDataCommand(),
+      await this.getDatabaseConnection()
+    );
+  }
+
+  @memoize
+  private async getDownloadAndProcessIdmsGroupLocationMappingCommand(): Promise<DownloadAndProcessCommand> {
+    return new DownloadAndProcessCommand(
+      await this.getDownloadIdmsGroupLocationMappingCommand(),
+      await this.getImportIdmsGroupLocationMappingCommand(),
       await this.getDatabaseConnection()
     );
   }
