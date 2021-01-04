@@ -1,6 +1,6 @@
 {
   "name": "@assertis/dtd2mysql",
-  "version": "6.14.0",
+  "version": "6.14.1",
   "description": "Command line tool to put the GB rail DTD feed into a MySQL compatible database",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -20,6 +20,8 @@
     "x-files": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --get-x-files-in-transaction",
     "timetable": "SFTP_USERNAME=linusnorton SFTP_PASSWORD=#!weeklyDownload1 DATABASE_NAME=${DATABASE_NAME_TIMETABLE:-timetable} NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --get-timetable-in-transaction",
     "fares-clean": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --fares-clean",
+    "get-idms-stations-ref-data": "S3_KEY=AKIAJ7M4AOMKSW7QQJAQ S3_SECRET=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 NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --get-idms-stations-ref-data",
+    "get-idms-group-location-mapping": "S3_KEY=AKIAJ7M4AOMKSW7QQJAQ S3_SECRET=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 NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --get-idms-group-location-mapping",
     "dataVersion": "ts-node ./src/dataVersion.ts",
     "dev": "ts-node ./src/dev.ts"
   },
