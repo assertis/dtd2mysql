@@ -20,10 +20,10 @@ export class DownloadDirectoryFromS3Command implements CLICommand {
     const names = await this.listAvailableFileNames();
 
     await Promise.all(names.map(async (name: string): Promise<string> => {
-      const filename = this.outputDirectory + name;
-      const stream = this.s3.getObject({Bucket: this.bucket, Key: this.path + name}).createReadStream();
+      const filename = this.outputDirectory + this.parseFilename(name);
+      const stream = this.s3.getObject({Bucket: this.bucket, Key: name}).createReadStream();
 
-      console.log(`Downloading S3 file ${this.bucket}/${this.path}/${name}`);
+      console.log(`Downloading S3 file ${name}`);
 
       return this.downloadStream(stream, filename);
     }));
@@ -39,9 +39,9 @@ export class DownloadDirectoryFromS3Command implements CLICommand {
     }
 
     return files.Contents.reduce((names: string[], item: S3.Object) => {
-      const name = this.parseFilename(item);
+      const name = item.Key;//this.parseFilename(item);
 
-      if (name !== undefined) {
+      if (!!name) {
         names.push(name);
       }
 
@@ -49,12 +49,9 @@ export class DownloadDirectoryFromS3Command implements CLICommand {
     }, [] as string[]);
   }
 
-  private parseFilename(item: S3.Object): string | undefined {
-    if (!item.Key) {
-      return undefined;
-    }
-
-    const [, name] = item.Key.split('/');
+  private parseFilename(key: string): string | undefined {
+    const parts = key.split('/');
+    const name = parts.pop();
 
     if (name === undefined || name === '') {
       return undefined;
