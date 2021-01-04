@@ -1,5 +1,5 @@
 
-import {DatabaseConnection} from "../../database/DatabaseConnection";
+import {DatabaseConnection} from "../../database";
 import {Transfer} from "../file/Transfer";
 import {CRS, Stop} from "../file/Stop";
 import moment = require("moment");
@@ -123,7 +123,6 @@ export class CIFRepository {
         JOIN z_stop_time ON z_schedule.id = z_stop_time.z_schedule
         WHERE runs_from < CURDATE() + INTERVAL ${this.scheduleHorizonMonths} MONTH
         AND runs_to >= CURDATE()
-        AND 1 = 0
         ORDER BY stop_id
       `))
     ]);
