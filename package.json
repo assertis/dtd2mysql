@@ -18,10 +18,7 @@
     "gtfs-zip": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --gtfs-zip",
     "download-x-files": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --download-x-files",
     "x-files": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --get-x-files-in-transaction",
-    "timetable": "SFTP_USERNAME=linusnorton SFTP_PASSWORD=#!weeklyDownload1 DATABASE_NAME=${DATABASE_NAME_TIMETABLE:-timetable} NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --get-timetable-in-transaction",
     "fares-clean": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --fares-clean",
-    "get-idms-stations-ref-data": "S3_KEY=AKIAJ7M4AOMKSW7QQJAQ S3_SECRET=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 NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --get-idms-stations-ref-data",
-    "get-idms-group-location-mapping": "S3_KEY=AKIAJ7M4AOMKSW7QQJAQ S3_SECRET=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 NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --get-idms-group-location-mapping",
     "dataVersion": "ts-node ./src/dataVersion.ts",
     "dev": "ts-node ./src/dev.ts"
   },
