@@ -85,6 +85,44 @@ export class Schedule implements OverlayRecord {
   }
 
   /**
+   * Clone the current record with the new stop times
+   */
+  public withStopTimes(stopTimes: StopTime[]): Schedule {
+    return new Schedule(
+      this.id,
+      stopTimes,
+      this.tuid,
+      this.rsid,
+      this.calendar,
+      this.mode,
+      this.operator,
+      this.stp,
+      this.firstClassAvailable,
+      this.reservationFlag,
+      this.activity
+    );
+  }
+
+  /**
+   * Clone the current record with the new stop times
+   */
+  public withTuid(tuid: TUID): Schedule {
+    return new Schedule(
+      this.id,
+      this.stopTimes,
+      tuid,
+      this.rsid,
+      this.calendar,
+      this.mode,
+      this.operator,
+      this.stp,
+      this.firstClassAvailable,
+      this.reservationFlag,
+      this.activity
+    );
+  }
+
+  /**
    * Convert to a GTFS Trip
    */
   public toTrip(serviceId: string, routeId: number): Trip {
@@ -150,8 +188,16 @@ export class Schedule implements OverlayRecord {
     return this.stopTimes.slice(0, this.stopTimes.findIndex(s => s.stop_id === location));
   }
 
+  public beforeIncluding(location: CRS): StopTime[] {
+    return this.stopTimes.slice(0, this.stopTimes.findIndex(s => s.stop_id === location) + 1);
+  }
+
   public after(location: CRS): StopTime[] {
     return this.stopTimes.slice(this.stopTimes.findIndex(s => s.stop_id === location) + 1);
+  }
+
+  public afterIncluding(location: CRS): StopTime[] {
+    return this.stopTimes.slice(this.stopTimes.findIndex(s => s.stop_id === location));
   }
 
   public stopAt(location: CRS): StopTime {
