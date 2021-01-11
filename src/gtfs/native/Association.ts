@@ -134,6 +134,20 @@ export class Association implements OverlayRecord {
   }
 
   /**
+   * Apply the split or join to the given schedules
+   */
+  public sliceSchedule(schedule: Schedule): Schedule {
+    const stops: StopTime[] = this.assocType === AssociationType.Split
+      ? schedule.afterIncluding(this.assocLocation)
+      : schedule.beforeIncluding(this.assocLocation);
+
+    let stopSequence: number = 1;
+    const newStops = stops.map(s => cloneStop(s, stopSequence++, schedule.id));
+
+    return schedule.withStopTimes(newStops);
+  }
+
+  /**
    * Take the arrival time of the first stop and the departure time of the second stop and put them into a new stop
    */
   public mergeAssociationStop(arrivalStop: StopTime, departureStop: StopTime, makeMergePointAccessible: boolean): StopTime {
