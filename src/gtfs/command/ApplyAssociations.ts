@@ -48,7 +48,8 @@ export function applyAssociations(
 
             if (extra.stopTimes.length > 0) {
               // We need to change the trip id
-              schedulesByTuid[replacement.tuid].push(extra.clone(extra.calendar, idGenerator.next().value));
+              (schedulesByTuid[assocSchedule.tuid] = schedulesByTuid[assocSchedule.tuid] || [])
+                .push(extra.clone(extra.calendar, idGenerator.next().value));
             } else {
               console.log('Extra without calling points', extra.tuid, extra.rsid, association.assocLocation);
             }
