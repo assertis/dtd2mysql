@@ -42,6 +42,7 @@ export function applyAssociations(
 
           // add the merged base and associated schedule to the TUID index
           (schedulesByTuid[replacement.tuid] = schedulesByTuid[replacement.tuid] || []).push(replacement);
+
           if (enableExtraTrainChange) {
             const extra = association.sliceSchedule(replacement)
               .withTuid(assocSchedule.tuid);
@@ -49,7 +50,7 @@ export function applyAssociations(
             if (extra.stopTimes.length > 0) {
               // We need to change the trip id
               (schedulesByTuid[assocSchedule.tuid] = schedulesByTuid[assocSchedule.tuid] || [])
-                .push(extra.clone(extra.calendar, idGenerator.next().value));
+                .push(extra.clone(assocSchedule.calendar, idGenerator.next().value));
             } else {
               console.log('Extra without calling points', extra.tuid, extra.rsid, association.assocLocation);
             }
