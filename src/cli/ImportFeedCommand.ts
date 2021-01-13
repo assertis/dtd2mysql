@@ -1,35 +1,30 @@
 import AdmZip = require("adm-zip");
-import {CLICommand} from "./CLICommand";
-import {FeedConfig} from "../../config";
-import {FeedFile} from "../feed/file/FeedFile";
-import {MySQLSchema} from "../database/MySQLSchema";
-import {DatabaseConnection} from "../database/DatabaseConnection";
-import * as path from "path";
-import {MySQLTable} from "../database/MySQLTable";
-import * as memoize from "memoized-class-decorator";
 import fs = require("fs-extra");
-import {MultiRecordFile} from "../feed/file/MultiRecordFile";
-import {RecordWithManualIdentifier} from "../feed/record/FixedWidthRecord";
-import {MySQLStream, TableIndex} from "../database/MySQLStream";
-import byline = require("byline");
-import streamToPromise = require("stream-to-promise");
+import LineByLineReader = require('line-by-line');
+import * as path from "path";
+import * as memoize from "memoized-class-decorator";
+import {FeedConfig} from "../../config";
+import {FeedFile, MultiRecordFile} from "../feed/file";
+import {RecordWithManualIdentifier} from "../feed/record";
+import {DatabaseConnection, MySQLSchema, MySQLStream, MySQLTable, TableIndex} from "../database";
+import {CLICommand} from "./CLICommand";
 
 const getExt = filename => path.extname(filename).slice(1).toUpperCase();
-const readFile = filename => byline.createStream(fs.createReadStream(filename, "utf8"));
 
 /**
  * Imports one of the feeds
  */
 export class ImportFeedCommand implements CLICommand {
 
-  private index: {[name: string]: MySQLTable} = {};
+  private index: Record<string, MySQLTable> = {};
 
   constructor(
     protected readonly db: DatabaseConnection,
     protected readonly files: FeedConfig,
     protected readonly tmpFolder: string,
     private readonly xFilesFolder?: string,
-  ) { }
+  ) {
+  }
 
   protected get fileArray(): FeedFile[] {
     return Object.values(this.files);
@@ -41,8 +36,7 @@ export class ImportFeedCommand implements CLICommand {
   public async run(argv: string[]): Promise<void> {
     try {
       await this.doImport(argv[3]);
-    }
-    catch (err) {
+    } catch (err) {
       console.error(err);
     }
 
@@ -115,11 +109,11 @@ export class ImportFeedCommand implements CLICommand {
    */
   private createLastProcessedSchema(): Promise<void> {
     return this.db.query(`
-      CREATE TABLE IF NOT EXISTS log ( 
-        id INT(11) unsigned not null primary key auto_increment, 
-        filename VARCHAR(12), 
-        processed DATETIME 
-      )
+        CREATE TABLE IF NOT EXISTS log (
+            id        INT(11) unsigned not null primary key auto_increment,
+            filename  VARCHAR(12),
+            processed DATETIME
+        )
     `);
   }
 
@@ -159,10 +153,40 @@ export class ImportFeedCommand implements CLICommand {
     const file = this.getFeedFile(filename);
     const tables = await this.tables(file);
     const tableStream = new MySQLStream(filename, file, tables);
-    const stream = readFile(path + filename).pipe(tableStream);
 
     try {
-      await streamToPromise(stream);
+      await new Promise((resolve, reject) => {
+        const lineStream = new LineByLineReader(path + filename);
+
+        lineStream.on('line', async function (line: string) {
+          // Pause after every line to enforce correct line ordering in multi-record files.
+          lineStream.pause();
+
+          if (await tableStream.write(line) !== false) {
+            // Not sure if this check is still necessary, but better safe.
+            lineStream.resume();
+          }
+        });
+
+        tableStream.on('drain', async () => {
+          lineStream.resume();
+        });
+
+        lineStream.on('end', async () => {
+          await tableStream.close();
+          resolve();
+        });
+
+        lineStream.on('error', async (err) => {
+          console.log(err);
+          reject();
+        });
+
+        tableStream.on('error', async (err) => {
+          console.log(err);
+          reject();
+        });
+      });
 
       console.log(`Finished processing ${path + filename}`);
     }
