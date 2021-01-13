@@ -16,7 +16,7 @@ const getExt = filename => path.extname(filename).slice(1).toUpperCase();
  */
 export class ImportFeedCommand implements CLICommand {
 
-  private index: { [name: string]: MySQLTable } = {};
+  private index: Record<string, MySQLTable> = {};
 
   constructor(
     protected readonly db: DatabaseConnection,
@@ -158,7 +158,7 @@ export class ImportFeedCommand implements CLICommand {
       await new Promise((resolve, reject) => {
         const lineStream = new LineByLineReader(path + filename);
 
-        lineStream.on('line', async function (line: any) {
+        lineStream.on('line', async function (line: string) {
           // Pause after every line to enforce correct line ordering in multi-record files.
           lineStream.pause();
 
