@@ -86,12 +86,20 @@ export class ImportFeedCommand implements CLICommand {
   }
 
   private async importDirectory(path: string): Promise<void> {
-    // no, we can't squeeze those 2 Promise.all() into single one.
-    await Promise.all(
-      fs.readdirSync(path)
-        .filter(filename => this.getFeedFile(filename))
-        .map(filename => this.processFile(path, filename))
-    );
+    const files = fs.readdirSync(path);
+
+    // Files need to be processed sequentially because there might be two files of the same type in it.
+    // If you process two of the same file type with a manual id, they will get their ids messed up.
+    // That happens when you process X-Files.
+    for (const filename of files) {
+      const feed = this.getFeedFile(filename);
+
+      if (feed === undefined) {
+        continue;
+      }
+
+      await this.processFile(path, filename);
+    }
 
     await Promise.all(Object.values(this.index).map(table => table.flushAll()));
   }
@@ -151,6 +159,11 @@ export class ImportFeedCommand implements CLICommand {
    */
   private async processFile(path, filename: string): Promise<any> {
     const file = this.getFeedFile(filename);
+
+    if (file === undefined) {
+      throw new Error('Could not procure FeedFile for ' + filename);
+    }
+
     const tables = await this.tables(file);
     const tableStream = new MySQLStream(filename, file, tables);
 
@@ -197,7 +210,7 @@ export class ImportFeedCommand implements CLICommand {
   }
 
   @memoize
-  private getFeedFile(filename: string): FeedFile {
+  private getFeedFile(filename: string): FeedFile | undefined {
     return this.files[getExt(filename)];
   }
 
