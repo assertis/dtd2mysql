@@ -26,19 +26,31 @@ export class ScheduleBuilder {
     return new Promise<void>((resolve, reject) => {
       let stops: StopTime[] = [];
       let prevRow: ScheduleStopTimeRow;
-      let departureHour = 4;
+      let departureHour: number | undefined = undefined;
+
+      const parseHour = (row: ScheduleStopTimeRow): number => {
+        const time = row.public_arrival_time || row.public_departure_time || row.scheduled_arrival_time || row.scheduled_departure_time || '04:00';
+
+        return parseInt(time.substr(0, 2), 10);
+      }
 
       results.on("result", (row: ScheduleStopTimeRow) => {
         if (prevRow && prevRow.id !== row.id) {
-          this.schedules.push(this.createSchedule(prevRow, stops));
+          const schedule = this.createSchedule(prevRow, stops);
+          if (schedule) {
+            this.schedules.push(schedule);
+          }
           stops = [];
 
-          departureHour = row.public_arrival_time
-            ? parseInt(row.public_arrival_time.substr(0, 2), 10)
-            : row.public_departure_time ? parseInt(row.public_departure_time.substr(0, 2), 10) : 4;
+          // Reset departure hour for the new service
+          departureHour = parseHour(row);
         }
 
         if (row.stp_indicator !== STP.Cancellation) {
+          if (!departureHour) {
+            departureHour = parseHour(row);
+          }
+
           const stop = this.createStop(row, stops.length + 1, departureHour);
 
           if (prevRow && prevRow.id === row.id && row.crs_code === prevRow.crs_code) {
@@ -56,7 +68,10 @@ export class ScheduleBuilder {
 
       results.on("end", () => {
         if (prevRow) {
-          this.schedules.push(this.createSchedule(prevRow, stops));
+          const schedule = this.createSchedule(prevRow, stops);
+          if (schedule) {
+            this.schedules.push(schedule);
+          }
         }
 
         resolve();
@@ -65,7 +80,51 @@ export class ScheduleBuilder {
     });
   }
 
-  private createSchedule(row: ScheduleStopTimeRow, stops: StopTime[]): Schedule {
+  private verifyStops(stops: StopTime[]): void {
+    let last: StopTime | undefined;
+
+    const timeToSec = (time: string): number => {
+      const hour = parseInt(time.substr(0, 2));
+      const minute = parseInt(time.substr(3, 2));
+      const second = parseInt(time.substr(6, 2));
+
+      return (hour * 3600) + (minute * 60) + second;
+    }
+
+    for (const stop of stops) {
+      // Catch
+      const diff = timeToSec(stop.arrival_time) - timeToSec(stop.departure_time);
+      if (diff > 180) {
+        throw new Error(`Stop ${stop.stop_id} is time traveling by ${diff} sec`);
+      }
+
+      if (last) {
+        const diff = timeToSec(last.departure_time) - timeToSec(stop.arrival_time);
+        if (diff > 180) {
+          throw new Error(`Time traveling between ${last.stop_id} ${stop.stop_id} by ${diff} sec`);
+        }
+      }
+
+      last = stop;
+    }
+  }
+
+  private dateToStr = (date: Date): string => {
+    const year = date.getFullYear() % 2000;
+    const month = date.getMonth() + 1;
+    const day = date.getDay() + 1;
+
+    return year + '/' + (month < 10 ? '0' : '') + month + '/' + (day < 10 ? '0' : '') + day;
+  };
+
+  private createSchedule(row: ScheduleStopTimeRow, stops: StopTime[]): Schedule | undefined {
+    try {
+      this.verifyStops(stops);
+    } catch (e) {
+      console.log(`Schedule ${row.train_uid}-${row.retail_train_id}-${this.dateToStr(row.runs_from)}-${row.stp_indicator} (ID: ${row.id}) has time travel: ${e.message}`);
+      return undefined;
+    }
+
     this.maxId = Math.max(this.maxId, row.id);
 
     /**
@@ -159,8 +218,12 @@ export class ScheduleBuilder {
 
     const departureHour = parseInt(time.substr(0, 2), 10);
 
-    // if the service started after 4am and after the current stops departure hour we've probably rolled over midnight
-    if (originDepartureHour >= 4 && originDepartureHour > departureHour) {
+    // If the service started after 4am and after the current stops departure hour we've probably rolled over midnight.
+    // We force the jump to be at least 4 hours (i.e. 23:00 -> to 18:00 next day will work, 23:00 to 21:00 next day won't)
+    // to get rid of small DTD issues where a passing point is 1-2 minutes after the next calling point, i.e.
+    //  LIWEALING           0624 000000004  RL
+    //  LIEALINGB 0625H0626H     062306234  RL    T
+    if (originDepartureHour >= 4 && (originDepartureHour - departureHour > 4)) {
       return (departureHour + 24) + time.substr(2);
     }
 
