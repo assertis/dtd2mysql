@@ -20,6 +20,8 @@ export function applyAssociations(
   for (const associations of Object.values(associationsIndex)) {
     // for each association
     for (const association of associations) {
+      const enableExtraTrainChange = keepOriginalAssociatedScheduleIds.includes(association.id);
+
       // get the date range for the associated schedules
       const assocCalendar = association.dateIndicator === DateIndicator.Next
         ? association.calendar.shiftForward()
@@ -36,13 +38,23 @@ export function applyAssociations(
         const baseSchedules = findSchedules(schedulesByTuid[association.baseTUID] || [], baseCalendar);
 
         for (const baseSchedule of baseSchedules) {
-          const [replacement, ...associatedSchedules] = association.apply(baseSchedule, assocSchedule, idGenerator);
+          const [replacement, ...associatedSchedules] = association.apply(baseSchedule, assocSchedule, idGenerator, enableExtraTrainChange);
 
           // add the merged base and associated schedule to the TUID index
           (schedulesByTuid[replacement.tuid] = schedulesByTuid[replacement.tuid] || []).push(replacement);
-          if (keepOriginalAssociatedScheduleIds.includes(association.id)) {
-            // We need to change the trip id
-            schedulesByTuid[replacement.tuid].push(assocSchedule.clone(assocSchedule.calendar, idGenerator.next().value));
+
+          if (enableExtraTrainChange) {
+            const extra = association.sliceSchedule(replacement)
+              .withTuid(assocSchedule.tuid);
+
+            if (extra.stopTimes.length > 0) {
+              // We need to change the trip id
+              (schedulesByTuid[assocSchedule.tuid] = schedulesByTuid[assocSchedule.tuid] || [])
+                .push(extra.clone(assocSchedule.calendar, idGenerator.next().value));
+            } else {
+              console.log('Extra without calling points', extra.tuid, extra.rsid, association.assocLocation);
+            }
+
           }
 
           // remove the original associated schedule and replace with any substitute schedules created

@@ -8,7 +8,7 @@ import ALF from "./file/ALF";
 import CFA from "./file/CFA";
 
 export const xFilesBucket = "ride-data";
-export const xFilesPrefix = "x-files/";
+export const xFilesPrefix = "dtd/x-files";
 
 const specification: FeedConfig = {
   "MSN": MSN,

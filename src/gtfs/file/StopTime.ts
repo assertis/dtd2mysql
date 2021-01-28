@@ -23,7 +23,8 @@ export enum ActivityPattern {
   PickUpOnly = "PickUpOnly",
   SetDownOnly = "SetDownOnly",
   RequestStop = "RequestStop",
-  Normal = "Normal"
+  Normal = "Normal",
+  NotAdvertised = "NotAdvertised"
 }
 
 export const ActivityMap = {
@@ -32,5 +33,6 @@ export const ActivityMap = {
   "D": ActivityPattern.SetDownOnly, // Train stops only to set down passengers
   "U": ActivityPattern.PickUpOnly, // Train stops only to take up passengers
   "T": ActivityPattern.Normal, // Train stops to take up and set down passengers
-  "R": ActivityPattern.RequestStop // Train stops when required
+  "R": ActivityPattern.RequestStop, // Train stops when required
+  "N": ActivityPattern.NotAdvertised, // Train don't stop
 };

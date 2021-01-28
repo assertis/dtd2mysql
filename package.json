@@ -1,6 +1,6 @@
 {
   "name": "@assertis/dtd2mysql",
-  "version": "6.12.0",
+  "version": "6.14.7",
   "description": "Command line tool to put the GB rail DTD feed into a MySQL compatible database",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -18,8 +18,9 @@
     "gtfs-zip": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --gtfs-zip",
     "download-x-files": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --download-x-files",
     "x-files": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --get-x-files-in-transaction",
-    "timetable": "SFTP_USERNAME=linusnorton SFTP_PASSWORD=#!weeklyDownload1 DATABASE_NAME=${DATABASE_NAME_TIMETABLE:-timetable} NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --get-timetable-in-transaction",
-    "fares-clean": "NODE_OPTIONS='--max-old-space-size=3000' ts-node ./src/index.ts --fares-clean",
+    "timetable": "SFTP_USERNAME=linusnorton SFTP_PASSWORD=#!weeklyDownload1 DATABASE_NAME=${DATABASE_NAME_TIMETABLE:-timetable} ts-node ./src/index.ts --get-timetable",
+    "fares-update": "SFTP_USERNAME=linusnorton SFTP_PASSWORD=#!weeklyDownload1 DATABASE_NAME=${DATABASE_NAME_FARES:-fares} ts-node ./src/index.ts --get-fares",
+    "fares-clean": "DATABASE_NAME=${DATABASE_NAME_FARES:-fares} ts-node ./src/index.ts --fares-clean",
     "dataVersion": "ts-node ./src/dataVersion.ts",
     "dev": "ts-node ./src/dev.ts"
   },
@@ -49,6 +50,7 @@
     "csv-write-stream": "^2.0.0",
     "fs-extra": "^7.0.0",
     "js-joda": "^1.9.3",
+    "line-by-line": "^0.1.6",
     "memoized-class-decorator": "^1.6.1",
     "moment": "^2.23.0",
     "mysql2": "^1.6.1",
