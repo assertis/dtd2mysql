@@ -8,6 +8,7 @@ import {FeedFile, MultiRecordFile} from "../feed/file";
 import {RecordWithManualIdentifier} from "../feed/record";
 import {DatabaseConnection, MySQLSchema, MySQLStream, MySQLTable, TableIndex} from "../database";
 import {CLICommand} from "./CLICommand";
+import {ScheduleIdMap} from "./ScheduleIdMap";
 
 const getExt = filename => path.extname(filename).slice(1).toUpperCase();
 
@@ -17,6 +18,7 @@ const getExt = filename => path.extname(filename).slice(1).toUpperCase();
 export class ImportFeedCommand implements CLICommand {
 
   private index: Record<string, MySQLTable> = {};
+  private scheduleIdMap: ScheduleIdMap;
 
   constructor(
     protected readonly db: DatabaseConnection,
@@ -24,6 +26,7 @@ export class ImportFeedCommand implements CLICommand {
     protected readonly tmpFolder: string,
     private readonly xFilesFolder?: string,
   ) {
+    this.scheduleIdMap = new ScheduleIdMap(db);
   }
 
   protected get fileArray(): FeedFile[] {
