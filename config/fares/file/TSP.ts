@@ -19,7 +19,8 @@ const record = new FixedWidthRecord(
     "start_date": new DateField(18),
     "sleeper_mkr": new BooleanField(26),
     "inc_exc_stock": new TextField(27, 1),
-    "stock_list": new TextField(28, 40, true)
+    "stock_list": new TextField(28, 40, true),
+    "hash": new TextField(0,2,true) // This is only for purpose of working for HEX. It is replaced later on somewhere else
   }
 );
 
