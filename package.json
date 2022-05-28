@@ -45,7 +45,7 @@
   "homepage": "https://github.com/open-track/dtd2mysql#readme",
   "dependencies": {
     "adm-zip": "^0.4.11",
-    "aws-sdk": "^2.395.0",
+    "aws-sdk": "^2.1130.0",
     "byline": "^5.0.0",
     "csv-write-stream": "^2.0.0",
     "fs-extra": "^7.0.0",
