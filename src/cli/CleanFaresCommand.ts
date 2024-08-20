@@ -40,7 +40,9 @@ export class CleanFaresCommand implements CLICommand {
     "UPDATE railcard SET min_adults=1, max_adults=1, min_children=0, max_children=0, max_passengers=1 WHERE railcard_code='JCP'",
     "UPDATE railcard SET min_adults=0, max_adults=9, min_children=0, max_children=9, max_passengers=9 WHERE railcard_code=''",
     "UPDATE status_discount SET discount_indicator = 'X' WHERE status_code != '000' and status_code != '001' AND discount_percentage = 0",
-    "INSERT IGNORE INTO flow SET origin_code=1072, destination_code=\"I481\", route_code=\"00345\", status_code=000, start_date=CURRENT_DATE(), end_date=\"2999-12-31\", toc=\"CS\", publication_ind=\"Y\""
+    "INSERT IGNORE INTO flow SET origin_code=1072, destination_code=\"I481\", route_code=\"00345\", status_code=000, start_date=CURRENT_DATE(), end_date=\"2999-12-31\", toc=\"CS\", publication_ind=\"Y\"",
+    // Handle situation when there is a lower discount with the same date ranges
+    "DELETE FROM status_discount where end_date=\'2999-12-31\' and discount_percentage=340 AND EXISTS(SELECT * FROM status_discount WHERE end_date=\'2999-12-31\' AND discount_percentage=334)"
   ];
 
   private readonly indexes = [

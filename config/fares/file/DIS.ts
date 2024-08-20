@@ -7,7 +7,7 @@ import {BooleanField} from "../../../src/feed/field/BooleanField";
 
 const statusDiscount = new FixedWidthRecord(
   "status_discount",
-  ["status_code", "end_date", "discount_category"],
+  ["status_code", "end_date", "discount_category", "discount_percentage"],
   {
     "status_code": new TextField(1, 3),
     "end_date": new DateField(4),
